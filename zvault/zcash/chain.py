@@ -1,0 +1,233 @@
+#!/usr/bin/env python3
+"""
+ZVAULT chain source — the last gap.
+
+Turns a Zcash node into the block stream `indexer.scan()` expects. Zaino is the
+target: it serves a JSON-RPC API covering the subset of Zcash RPCs wallets and
+explorers need, sitting between a Zebra or zcashd validator and this script.
+The same calls work against zcashd, so either backend is fine.
+
+    python3 chain.py probe
+    python3 chain.py scan --to 2900500 --out blocks.json
+    python3 chain.py watch
+
+v2: every block is emitted, including blocks with no ZVLT records, because
+the indexer needs every block hash (challenges come from recent block hashes,
+and a stalled epoch seals on a block that may carry no mints). Scans start at
+LAUNCH_HEIGHT - CHALLENGE_WINDOW by default; the indexer refuses any other
+start, since a state built from a partial history cannot be trusted.
+
+Everything here reads public data. No viewing key, no wallet, no credential
+beyond RPC auth to your own node — which is the whole point. If verifying the
+collection required a secret, it would not be verification.
+"""
+
+import argparse
+import base64
+import json
+import sys
+import time
+import urllib.request
+from pathlib import Path
+
+# Single source of truth — must match indexer exactly.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import indexer as ix
+
+MAGIC = ix.MAGIC
+TREASURY = ix.TREASURY
+
+
+class Node:
+    """Minimal JSON-RPC client. Works against zainod or zcashd."""
+
+    def __init__(self, url="http://127.0.0.1:8232", user=None, password=None,
+                 cookie=None):
+        self.url = url
+        self.auth = None
+        if cookie:
+            # Zallet writes a random credential to {datadir}/.cookie on startup.
+            tok = open(cookie).read().strip()
+            self.auth = base64.b64encode(tok.encode()).decode()
+        elif user is not None:
+            self.auth = base64.b64encode(f"{user}:{password or ''}".encode()).decode()
+
+    def call(self, method, params=None):
+        body = json.dumps({"jsonrpc": "1.0", "id": "zvault",
+                           "method": method, "params": params or []}).encode()
+        req = urllib.request.Request(self.url, data=body,
+                                     headers={"Content-Type": "application/json"})
+        if self.auth:
+            req.add_header("Authorization", f"Basic {self.auth}")
+        with urllib.request.urlopen(req, timeout=60) as r:
+            out = json.loads(r.read())
+        if out.get("error"):
+            raise RuntimeError(f"{method}: {out['error']}")
+        return out["result"]
+
+
+# --------------------------------------------------------------- extraction
+
+def op_return_from(vout) -> bytes | None:
+    """Pull the pushed payload out of an OP_RETURN output.
+
+    scriptPubKey hex looks like: 6a <pushop> <data>
+      6a       OP_RETURN
+      4c LL    OP_PUSHDATA1 + 1-byte length   (used for 76..255 bytes)
+      LL       bare push                      (used for 1..75 bytes)
+
+    A 74-byte record lands in the bare-push branch, but handle both — a future
+    version bump past 75 bytes would silently stop parsing otherwise.
+    """
+    spk = vout.get("scriptPubKey", {})
+    hexstr = spk.get("hex", "")
+    if not hexstr.startswith("6a"):
+        return None
+    raw = bytes.fromhex(hexstr)
+    if len(raw) < 2:
+        return None
+    if raw[1] == 0x4C:                       # OP_PUSHDATA1
+        if len(raw) < 3:
+            return None
+        ln = raw[2]
+        return raw[3:3 + ln]
+    ln = raw[1]                              # bare push
+    if ln > 75:
+        return None
+    return raw[2:2 + ln]
+
+
+def paid_to_treasury(tx, treasury=TREASURY) -> int:
+    """Sum transparent outputs to the treasury, in zatoshis.
+
+    Only transparent outputs count, and that is deliberate: a shielded payment
+    is invisible to everyone but the recipient, so an indexer could not confirm
+    it and neither could anyone auditing the indexer. The mint payment is the
+    one part of this protocol that must be public.
+    """
+    total = 0
+    for vout in tx.get("vout", []):
+        addrs = vout.get("scriptPubKey", {}).get("addresses") or []
+        if treasury in addrs:
+            total += int(round(float(vout.get("value", 0)) * 1e8))
+    return total
+
+
+def burned_in(tx) -> int:
+    """Placeholder until the burn token exists.
+
+    Zcash has no tokens, so 'burn' needs a concrete definition before launch:
+    either ZEC to a provably-unspendable address, or a ZSA burn once ZIP 226
+    ships. Returning 0 means burn contributes nothing to scoring today — the
+    weight is live in the formula, the mechanism is not. Decide before you
+    publish the weights, because changing them after launch re-prices every
+    mint already made.
+    """
+    return 0
+
+
+def extract_block(node: Node, height: int) -> dict:
+    blk = node.call("getblock", [str(height), 2])   # verbosity 2 = full txs
+    txs = []
+    for tx in blk.get("tx", []):
+        if isinstance(tx, str):                      # verbosity fell back to ids
+            tx = node.call("getrawtransaction", [tx, 1])
+        payload = None
+        for vout in tx.get("vout", []):
+            got = op_return_from(vout)
+            if got and got.startswith(MAGIC):
+                payload = got
+                break
+        if payload is None:
+            continue
+        txs.append({
+            "txid": tx.get("txid"),
+            "op_return": payload.hex(),              # hex for JSON transport
+            "paid_to_treasury": paid_to_treasury(tx),
+            "burned": burned_in(tx),
+        })
+    return {"height": height, "hash": blk.get("hash"), "tx": txs}
+
+
+def rehydrate(blocks):
+    """JSON carries op_return as hex; indexer.parse_mint wants bytes."""
+    for b in blocks:
+        for tx in b["tx"]:
+            if isinstance(tx["op_return"], str):
+                tx["op_return"] = bytes.fromhex(tx["op_return"])
+    return blocks
+
+
+# --------------------------------------------------------------------- cli
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--url", default="http://127.0.0.1:8232")
+    ap.add_argument("--user")
+    ap.add_argument("--password")
+    ap.add_argument("--cookie", help="path to {datadir}/.cookie (Zallet)")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    sub.add_parser("probe")
+
+    s = sub.add_parser("scan")
+    s.add_argument("--from", dest="start", type=int, default=None,
+                   help="default: LAUNCH_HEIGHT - CHALLENGE_WINDOW")
+    s.add_argument("--to", dest="end", type=int)
+    s.add_argument("--out", default="blocks.json")
+
+    w = sub.add_parser("watch")
+    w.add_argument("--from", dest="start", type=int, default=None)
+    w.add_argument("--interval", type=int, default=75)   # Zcash targets 75s
+
+    a = ap.parse_args()
+    node = Node(a.url, a.user, a.password, a.cookie)
+    if getattr(a, "start", None) is None and a.cmd in ("scan", "watch"):
+        import indexer as ix
+        a.start = ix.LAUNCH_HEIGHT - ix.CHALLENGE_WINDOW
+
+    if a.cmd == "probe":
+        try:
+            info = node.call("getblockchaininfo")
+        except Exception as e:
+            print(f"cannot reach node at {a.url}\n  {e}", file=sys.stderr)
+            print("\n  zainod start --config zaino.toml", file=sys.stderr)
+            print("  or point --url at your zcashd rpcbind", file=sys.stderr)
+            raise SystemExit(1)
+        print(f"  chain   {info.get('chain')}")
+        print(f"  height  {info.get('blocks')}")
+        print(f"  synced  {info.get('verificationprogress', 'n/a')}")
+        return
+
+    if a.cmd == "scan":
+        end = a.end or node.call("getblockchaininfo")["blocks"]
+        blocks, found = [], 0
+        for h in range(a.start, end + 1):
+            blk = extract_block(node, h)
+            blocks.append(blk)                   # every block: the hash matters
+            found += len(blk["tx"])
+            if (h - a.start) % 500 == 0:
+                print(f"\r  {h}/{end}  {found} records", end="", file=sys.stderr)
+        print(file=sys.stderr)
+        json.dump(blocks, open(a.out, "w"), separators=(",", ":"))
+        print(f"  {found} ZVLT records across {len(blocks)} blocks -> {a.out}")
+        print(f"  python3 indexer.py --blocks {a.out}")
+        return
+
+    if a.cmd == "watch":
+        import indexer as ix
+        v, height = ix.Vault(), a.start
+        while True:
+            tip = node.call("getblockchaininfo")["blocks"]
+            while height <= tip:
+                blk = rehydrate([extract_block(node, height)])[0]
+                for entry in v.apply_block(height, bytes.fromhex(blk["hash"]), blk["tx"]):
+                    print(f"  {height}  {'OK ' if entry['ok'] else 'REJ'}  {entry['reason']}")
+                height += 1
+            print(f"\r  tip {tip}  minted {v.minted}  digest {v.digest()[:16]}…",
+                  end="", file=sys.stderr)
+            time.sleep(a.interval)
+
+
+if __name__ == "__main__":
+    main()
