@@ -8,7 +8,7 @@ Two build targets in here. **They are alternatives, not layers.** Read
 
 ```
 DECIDE.md    read first: Zcash or EVM, and why they are alternatives
-RUNBOOK.md   how to run everything, hosting, key safety, calibration
+RUNBOOK.md   how to run everything, hosting (incl. Zcash node), key safety
 NOTES.md     design reasoning, rejected approaches, all warnings
 LAUNCH.md    thread draft + what in it is not true yet
 LINKS.md     every doc reference in one place
@@ -99,7 +99,6 @@ plainly in go-to-market.
 - Reveal/transfer wire format — cut from v1 launch (SPEC/LAUNCH)
 - `LAUNCH_HEIGHT` / `TREASURY` placeholders (must match chain.py ↔ indexer.py)
 - Receipt memo delivery (no return address)
-- Hardware bench before raising work / window
 
 **EVM track**
 - `HashVault.sol` — complete, unaudited, never deployed

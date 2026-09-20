@@ -55,5 +55,4 @@ See `REVIEW.md`.
 - **Burn is undefined** — axis capped at 0 until it isn't.
 - **Memo is a receipt** (index/epoch/seal_height); miner owns keys.
 - **`LAUNCH_HEIGHT` and `TREASURY` are placeholders.**
-- **Calibrate base difficulty on real hardware** before raising work bits.
 - `sim.py` still models v1 cutoffs for some commands; `epoch` models rank.

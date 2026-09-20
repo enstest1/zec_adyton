@@ -160,7 +160,15 @@ a valid PoW for a better tiebreak. Rank `r` of `n` maps to position
 | 56–87 | runner | 32 |
 | 88–127 | drone | 40 |
 
-Absolute score floors (200k / 420k / 640k / 840k) define `tier_by_score`.
+Absolute score floors are `score_floors()` — per-mille of `max_live_score()`
+with shape 20/42/64/84%. Under `MAX_BURN = 0` (live max 750k) that is
+150k / 315k / 480k / 630k. They define `tier_by_score`.
+
+**Burn cannot be activated mid-collection.** Raising `MAX_BURN` raises
+`max_live_score()` and therefore moves every floor. That would re-tier mints
+already sealed under the 750k scale. Burn is a next-version parameter only —
+ship a new collection (or a version bump with explicit migration rules), never
+flip it on under a live `SUPPLY_CAP`.
 Final assignment:
 
     tier = min(tier_by_rank, tier_by_score + 1)

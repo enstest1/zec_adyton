@@ -77,8 +77,9 @@ TIER_NAMES = ["drone", "runner", "warden", "cipher", "oracle"]
 
 
 def tier_of(score: int) -> int:
-    """Score is 0..1_000_000 from the circuit. Five tiers, widening shelves."""
-    for i, cut in enumerate((200_000, 420_000, 640_000, 840_000)):
+    """Score shelves for art. Must match indexer.score_floors()[1:] under the
+    live max (150/315/480/630k when burn is stubbed at 750k)."""
+    for i, cut in enumerate((150_000, 315_000, 480_000, 630_000)):
         if score < cut:
             return i
     return 4

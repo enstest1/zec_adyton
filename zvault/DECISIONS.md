@@ -18,9 +18,9 @@ deleted as stale.)
 
 ## Decision 2 — challenge window — HOLD
 
-Keep `CHALLENGE_WINDOW = 24` and `MAX_WORK_BITS = 4` until a CPU/GPU bench.
-See prior tables in git history / chat if needed; single-step stale-quote
-savings remain the relevant bound, and they are price-only after the flatten.
+Keep `CHALLENGE_WINDOW = 24` and `MAX_WORK_BITS = 4`. Hardest mint is 26 bits
+(~17s on two Python cores); no GPU calibration gate. Stale-quote savings are
+price-step only after the flatten.
 
 ## Tiebreak — CLOSED (see SPEC / GAME)
 
@@ -30,3 +30,12 @@ Equal scores break on `blake2b(epochSeal || commitment)`, not PoW hash.
 
 `floor_price_epoch(epoch)`:
   epochs 0–1 → 200_000 zat · 2–7 → 500_000 · 8–15 → 1_000_000 · 16–31 → 2_000_000
+
+## Burn — next version only — CLOSED for v1
+
+`MAX_BURN = 0` for this collection. `score_floors()` is derived from
+`max_live_score()`, so turning burn on mid-mint would raise the live maximum
+and move every absolute floor — re-tiering sealed epochs. **Do not activate
+burn under a live supply.** It is a next-version / next-collection parameter
+only; weights stay as published so a future version can enable it without
+re-pricing the formula shape.

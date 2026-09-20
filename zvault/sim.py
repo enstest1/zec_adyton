@@ -125,10 +125,14 @@ def cmd_strand():
 # ----------------------------------------------------------------------- solve
 
 def cmd_solve():
-    cuts = (200_000, 420_000, 640_000, 840_000)
+    # Historical v1 cutoff solver. Floors match indexer.score_floors() at the
+    # current live max (burn stubbed → 750k → 150/315/480/630).
+    from indexer import score_floors
+    cuts = score_floors()[1:]
     print("v1: tier = fixed cutoff on your own score. Your tier does not depend")
     print("on anyone else, so the game is a one-time optimisation per agent type.")
     print("This is that spreadsheet. Once posted, there is nothing left to figure out.\n")
+    print(f"  (floors from live max: {cuts})\n")
     for name, t in TYPES.items():
         print(f"  {name:<11}", end="")
         for tier, cut in enumerate(cuts, start=1):

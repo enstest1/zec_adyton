@@ -78,9 +78,10 @@ WEIGHTS = {"work": 4000, "patience": 2500, "burn": 2500, "money": 1000}
 # Tier numbers match art/generate.py TIER_NAMES (0 = drone .. 4 = oracle).
 SEAT_BOUNDS = ((8, 4), (24, 3), (56, 2), (88, 1))
 TIER_NAMES = ["drone", "runner", "warden", "cipher", "oracle"]
-# Absolute score floors (same cuts as the old cutoff table). Used only as a
-# ceiling on rank: tier = min(rank_tier, score_tier + 1).
-SCORE_FLOORS = (0, 200_000, 420_000, 640_000, 840_000)
+# Score-floor shape as per-mille of the live maximum. Same proportions as the
+# old 200k/420k/640k/840k cuts over a 1_000_000 four-axis score. Do NOT hardcode
+# absolute cutoffs — when MAX_BURN rises, the live max rises and floors move.
+_SCORE_FLOOR_PERMILLE = (0, 200, 420, 640, 840)
 
 
 # ----------------------------------------------------------------- primitives
@@ -137,6 +138,27 @@ def score_of(work: int, patience: int, burn: int, money: int) -> int:
     if MAX_BURN > 0:
         s += WEIGHTS["burn"] * sqrt_ratio(burn, MAX_BURN)
     return s // 10_000
+
+
+def max_live_score() -> int:
+    """Highest score a legal bid can achieve under current caps.
+
+    With MAX_BURN = 0 this is 750_000 (work+patience+money). Activating burn
+    restores the full 1_000_000 four-axis design without editing floor tables.
+    """
+    burn = MAX_BURN if MAX_BURN > 0 else 0
+    return score_of(MAX_WORK_BITS, MAX_PATIENCE, burn, MAX_MONEY)
+
+
+def score_floors() -> tuple:
+    """Absolute score floors for tier_by_score, scaled to max_live_score().
+
+    At live max 750_000: 150_000 / 315_000 / 480_000 / 630_000
+    (old 200/420/640/840 × 0.75). Used only as a ceiling on rank:
+        tier = min(rank_tier, score_tier + 1)
+    """
+    m = max_live_score()
+    return tuple((m * p) // 1000 for p in _SCORE_FLOOR_PERMILLE)
 
 
 def floor_price(n: int) -> int:
@@ -317,7 +339,8 @@ def tier_for_rank(rank: int, n: int) -> int:
 
 def tier_by_score(score: int) -> int:
     """Absolute floor lookup. Never assigns a tier by itself — see assign_tier."""
-    for i, cut in enumerate(SCORE_FLOORS[1:], start=1):
+    floors = score_floors()
+    for i, cut in enumerate(floors[1:], start=1):
         if score < cut:
             return i - 1
     return 4
@@ -971,6 +994,17 @@ def _selftest():
     check(floor_price_epoch(2) == 500_000, "epoch 2 floor step")
     check(base_difficulty(0) == base_difficulty(3000) == BASE_DIFFICULTY_BITS,
           "base difficulty is flat at BASE_DIFFICULTY_BITS")
+
+    # Score floors track the live maximum (750k with burn stubbed; 1e6 when burn
+    # is live). Hardcoded 840k cutoffs made oracle unreachable under MAX_BURN=0.
+    live = max_live_score()
+    floors = score_floors()
+    check(tier_by_score(live) == 4,
+          f"max live bid reaches tier_by_score 4 (live={live})")
+    check(floors == tuple((live * p) // 1000 for p in _SCORE_FLOOR_PERMILLE),
+          f"score floors derived from live maximum ({floors})")
+    check(floors == (0, 150_000, 315_000, 480_000, 630_000),
+          f"live floors are 150/315/480/630k under current caps ({floors})")
 
     # 11. Determinism, and the JSON path that chain.py actually produces.
     w, _ = scan(json.loads(json.dumps(blocks)),

@@ -54,16 +54,14 @@ Deriving from base **22** was wrong: at n ≥ 2048 base is **28**. With work 8
 that is 36 bits → ~115 MH/s for a **95%** land rate in 24 blocks (λ≈3), worse
 than the 34-bit case we were avoiding. Expected hashes (λ=1) is only ~63%.
 
-**Decision:** `MAX_WORK_BITS = 4` → 32 bits at the top step → **~7.2 MH/s** for
-95% landing. Provisional until a CPU/GPU bench. Full tables and the
-window-vs-stale-quote analysis: `DECISIONS.md`. **Do not widen the window or
-raise work further until those numbers are reviewed.**
+**Decision:** Base is now **flat 22**; with `MAX_WORK_BITS = 4` the hardest
+mint is **26 bits** (~17s on two Python cores). No GPU calibration gate.
+Window stays 24. See `DECISIONS.md`.
 
 ---
 
 ## Still open
 
 - Reveal / transfer OP_RETURN wire format
-- Real burn mechanism (then raise `MAX_BURN` and restore the weight)
+- Real burn mechanism (then raise `MAX_BURN`; score floors rescale via `score_floors()`)
 - `LAUNCH_HEIGHT` / `TREASURY` placeholders
-- Hardware calibration before publishing base difficulty
