@@ -73,3 +73,14 @@ Correctness is guaranteed by `web/vectors.json` matching `indexer.py`, not by
 the hash backend. Do **not** switch to WASM for speed: `MAX_WORK_BITS = 4` caps
 work so speed stops mattering. A hand-rolled WASM build would add risk without
 improving the product. Keep noble; keep the vector gate.
+
+## Mint page treasury + pub URLs — CLOSED
+
+`TREASURY` is hardcoded in `web/js/config.js` (must match `indexer.py`). It must
+never be read from `table.json`, `state.json`, or any fetch / query value — that
+would turn `?state=` into a payment-redirection attack.
+
+`?table=` / `?state=` overrides are off in the published build
+(`ALLOW_QUERY_PUB_OVERRIDE = false`) and, when enabled for local fixtures, are
+restricted to same-origin URLs. Cross-origin overrides are refused loudly with
+no silent fallback. Gated by `web/test_page_security.mjs`.

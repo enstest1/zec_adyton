@@ -43,6 +43,11 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
 button:hover:not(:disabled) { background: #12261c; }
 .kv span { color: var(--dim); }
 .kv b { color: var(--fg); font-weight: 500; }
+.treasury-line { margin: 0.75rem 0; }
+.treasury {
+  color: var(--warn); font-size: 1.05rem; letter-spacing: 0.02em;
+  word-break: break-all;
+}
 .panel {
   margin-top: 1rem; padding: 0.85rem 1rem;
   border: 1px solid var(--line); background: #0e1218;

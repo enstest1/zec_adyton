@@ -32,7 +32,9 @@ does not include a git hash you can `git checkout` yourself.
 
 1. **Set `LAUNCH_HEIGHT`** in `zcash/indexer.py` (imported by `chain.py`) to the
    real activation height and publish it.
-2. **Set `TREASURY`** to the real transparent treasury address and publish it.
+2. **Set `TREASURY`** to the real transparent treasury address in
+   `zcash/indexer.py` **and** `web/js/config.js` (must match exactly). The mint
+   page hardcodes it — it never reads treasury from table/state JSON.
 
 Both must match exactly across every indexer. Hardware GPU bench is **not** a
 blocker — 26-bit mints do not require special hardware.
@@ -46,6 +48,7 @@ python verify.py           # smoke only — not sufficient alone
 python sim.py all          # exit 0
 python web/test_vectors.py
 node web/test_vectors_js.mjs
+node web/test_page_security.mjs
 ```
 
 Run the indexer self-test three times; the state digest must be identical.

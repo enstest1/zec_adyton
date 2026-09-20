@@ -7,6 +7,8 @@ import {
   MAX_WORK_BITS, MAX_PATIENCE, MAX_MONEY, CHALLENGE_WINDOW,
 } from "./protocol.js";
 import { checkVectors } from "./check-vectors.js";
+import { TREASURY } from "./config.js";
+import { resolveTableStateUrls } from "./pub-urls.js";
 
 const SEAT_BOUNDS = [[8, 4], [24, 3], [56, 2], [88, 1]];
 const TIER_NAMES = ["drone", "runner", "warden", "cipher", "oracle"];
@@ -14,9 +16,22 @@ const FLOOR_PERMILLE = [0, 200, 420, 640, 840];
 const EPOCH_SIZE = 128;
 
 const $ = (id) => document.getElementById(id);
-const params = new URLSearchParams(location.search);
-const TABLE_URL = params.get("table") || "./pub/table.json";
-const STATE_URL = params.get("state") || "./pub/state.json";
+
+// Same-origin only; cross-origin ?table= / ?state= throws (see pub-urls.js).
+let TABLE_URL;
+let STATE_URL;
+try {
+  ({ table: TABLE_URL, state: STATE_URL } = resolveTableStateUrls(
+    new URLSearchParams(location.search),
+    location.href,
+  ));
+} catch (e) {
+  // Surface immediately — do not fall back to attacker-controlled or default
+  // paths after a refused override (would hide the attack).
+  TABLE_URL = null;
+  STATE_URL = null;
+  window.__pubUrlError = e;
+}
 
 function maxLiveScore() { return scoreOf(MAX_WORK_BITS, MAX_PATIENCE, 0, MAX_MONEY); }
 function scoreFloors() {
@@ -49,6 +64,9 @@ let keyfile = null; // held until user downloads
 let minedRecord = null;
 
 async function refreshTable() {
+  if (!TABLE_URL || !STATE_URL) {
+    throw new Error(String(window.__pubUrlError?.message || "pub URLs not configured"));
+  }
   const [tRes, sRes] = await Promise.all([fetch(TABLE_URL), fetch(STATE_URL)]);
   if (!tRes.ok) throw new Error(`table.json ${tRes.status} — is the publisher running?`);
   if (!sRes.ok) throw new Error(`state.json ${sRes.status}`);
@@ -84,6 +102,8 @@ function project() {
   const floor = table?.floor_price_zat ?? 0;
   const pay = floor * (1 + money);
   $("pay").textContent = `${(pay / 1e8).toFixed(4)} ZEC  (${pay} zat)`;
+  // TREASURY is a build-time constant — never from fetched JSON.
+  $("treasuryBid").textContent = TREASURY;
 
   const ep = table?.epoch;
   const field = (ep && ep.open && ep.bids) ? ep.bids.map((b) => b.score) : [];
@@ -210,18 +230,18 @@ function downloadKeyfile() {
   $("recordBox").classList.remove("hidden");
   $("opreturn").textContent = minedRecord.recordHex;
   $("payExact").textContent = `${(minedRecord.payZat / 1e8).toFixed(8)} ZEC (${minedRecord.payZat} zat)`;
+  $("treasuryPay").textContent = TREASURY;
   $("deadline").textContent = String(minedRecord.lastOk);
-  const treas = "TREASURY_PLACEHOLDER"; // page reads from state if present
-  const cli =
-    `zcash-cli createrawtransaction '[]' ` +
-    `'{"data":"${minedRecord.recordHex}","${treas}":${(minedRecord.payZat / 1e8).toFixed(8)}}'`;
   $("cliCmd").textContent =
     `# Broadcast BEFORE block ${minedRecord.lastOk}\n` +
-    `# Pay exactly ${minedRecord.payZat} zatoshis to the treasury (transparent).\n` +
+    `# Pay exactly ${minedRecord.payZat} zatoshis to TREASURY (transparent):\n` +
+    `#   ${TREASURY}\n` +
+    `# Compare this address to the repo / launch thread before sending.\n` +
     `# Attach OP_RETURN payload (hex):\n${minedRecord.recordHex}\n\n` +
-    `# Example shape (fill TREASURY address; use zallet/zcash-cli as you prefer):\n` +
-    `zcash-cli sendrawtransaction $(zcash-cli fundrawtransaction ...)\n` +
-    `# OP_RETURN data = ${minedRecord.recordHex}\n` +
+    `# Example shape (zallet / zcash-cli):\n` +
+    `zcash-cli createrawtransaction '[]' ` +
+    `'{"data":"${minedRecord.recordHex}","${TREASURY}":${(minedRecord.payZat / 1e8).toFixed(8)}}'\n` +
+    `# then fundrawtransaction + sign + sendrawtransaction\n` +
     `# amount = ${minedRecord.payZat} zat = ${(minedRecord.payZat / 1e8).toFixed(8)} ZEC`;
   $("recordPending").textContent = "Keyfile saved. Back it up offline. Then broadcast.";
 }
@@ -286,8 +306,19 @@ async function prepareReveal(entry) {
 
 async function boot() {
   $("trust").textContent =
-    "This page is static. After load it only fetches table.json / state.json. " +
-    "Secrets, seeds and salts are created with crypto.getRandomValues and never uploaded.";
+    "This page is static. After load it only fetches same-origin table.json / state.json. " +
+    "Secrets, seeds and salts are created with crypto.getRandomValues and never uploaded. " +
+    "Treasury address is hardcoded in the page source — never taken from those JSON files.";
+  $("treasuryBid").textContent = TREASURY;
+
+  if (window.__pubUrlError) {
+    const msg = String(window.__pubUrlError.message || window.__pubUrlError);
+    $("tableErr").textContent = msg;
+    $("btnMine").disabled = true;
+    $("btnRefresh").disabled = true;
+    console.error(window.__pubUrlError);
+    return;
+  }
 
   try {
     const r = await checkVectors("./vectors.json");
