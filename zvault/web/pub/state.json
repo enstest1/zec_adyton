@@ -1,0 +1,15 @@
+{
+  "minted": 0,
+  "epochs": 0,
+  "digest": null,
+  "tip_height": 2900024,
+  "indexed_height": null,
+  "obs_height": null,
+  "confirmation_depth": 10,
+  "rejected": 0,
+  "launch_height": 2900000,
+  "supply_cap": 4096,
+  "max_live_score": 750000,
+  "score_floors": [0, 150000, 315000, 480000, 630000],
+  "note": "demo state — overwritten by zcash/publisher.py"
+}

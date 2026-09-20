@@ -1,0 +1,61 @@
+:root {
+  --bg: #0a0c0f;
+  --fg: #c8d0d8;
+  --dim: #6a7380;
+  --accent: #3dd68c;
+  --warn: #e8b339;
+  --fail: #f07178;
+  --line: #1c222b;
+  --mono: "IBM Plex Mono", "Consolas", "Menlo", monospace;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg); color: var(--fg);
+  font-family: var(--mono); font-size: 14px; line-height: 1.45;
+}
+a { color: var(--accent); }
+main { max-width: 880px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+h1 { font-size: 1.25rem; font-weight: 600; letter-spacing: 0.04em; margin: 0 0 0.5rem; }
+h2 { font-size: 0.95rem; color: var(--accent); margin: 2rem 0 0.75rem; border-top: 1px solid var(--line); padding-top: 1.25rem; }
+.banner {
+  border: 1px solid var(--line); padding: 0.85rem 1rem; margin: 1rem 0;
+  color: var(--dim); font-size: 0.85rem;
+}
+.banner strong { color: var(--warn); }
+.ok { color: var(--accent); }
+.fail { color: var(--fail); font-weight: 600; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1.5rem; }
+@media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+label { display: block; color: var(--dim); font-size: 0.75rem; margin-top: 0.75rem; }
+input[type="text"], input[type="number"], input[type="file"] {
+  width: 100%; background: #12161c; border: 1px solid var(--line);
+  color: var(--fg); padding: 0.5rem 0.6rem; font-family: inherit; font-size: 0.9rem;
+}
+input:focus { outline: 1px solid var(--accent); }
+button {
+  margin-top: 1rem; margin-right: 0.5rem;
+  background: transparent; border: 1px solid var(--accent); color: var(--accent);
+  font-family: inherit; padding: 0.45rem 0.9rem; cursor: pointer;
+}
+button:disabled { opacity: 0.35; cursor: not-allowed; }
+button:hover:not(:disabled) { background: #12261c; }
+.kv span { color: var(--dim); }
+.kv b { color: var(--fg); font-weight: 500; }
+.panel {
+  margin-top: 1rem; padding: 0.85rem 1rem;
+  border: 1px solid var(--line); background: #0e1218;
+  white-space: pre-wrap; word-break: break-all; font-size: 0.8rem;
+}
+.hidden { display: none !important; }
+.warn-box {
+  border-color: var(--warn); color: var(--warn);
+  margin: 1rem 0; padding: 1rem;
+}
+.hash-counter {
+  font-size: 1.4rem; color: var(--accent); letter-spacing: 0.06em;
+  margin: 0.75rem 0;
+}
+.found { color: var(--accent); font-size: 1.1rem; letter-spacing: 0.12em; }
+footer { margin-top: 3rem; color: var(--dim); font-size: 0.75rem; }

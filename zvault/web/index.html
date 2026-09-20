@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ZVAULT — mine</title>
+  <link rel="stylesheet" href="./css/mint.css" />
+</head>
+<body>
+<main>
+  <h1>ZVAULT // MINE</h1>
+  <p class="banner" id="trust"></p>
+  <p id="vectors">checking vectors…</p>
+  <p id="tableErr" class="fail"></p>
+
+  <h2>01 live table</h2>
+  <div class="grid kv">
+    <div><span>tip</span><br /><b id="tip">—</b></div>
+    <div><span>minted</span><br /><b id="minted">—</b></div>
+    <div><span>epoch</span><br /><b id="epoch">—</b></div>
+    <div><span>seal</span><br /><b id="seal">—</b></div>
+    <div><span>floor</span><br /><b id="floor">—</b></div>
+    <div><span>base bits</span><br /><b id="baseBits">—</b></div>
+    <div><span>digest</span><br /><b id="digest">—</b></div>
+  </div>
+  <button type="button" id="btnRefresh">refresh table</button>
+
+  <h2>02 bid</h2>
+  <p class="banner">Burn is inactive in v1 and is not shown. Max live score is 750,000.</p>
+  <label>minerTag (20-byte hex of your transparent address / tag)</label>
+  <input id="tag" type="text" spellcheck="false" autocomplete="off" placeholder="40 hex chars" />
+  <div class="grid">
+    <div>
+      <label>work 0..4</label>
+      <input id="work" type="number" min="0" max="4" value="2" />
+    </div>
+    <div>
+      <label>patience 0..16 (×1152 blocks)</label>
+      <input id="patience" type="number" min="0" max="16" value="0" />
+    </div>
+    <div>
+      <label>money multiple 0..12</label>
+      <input id="money" type="number" min="0" max="12" value="0" />
+    </div>
+  </div>
+  <p class="kv"><span>score</span> <b id="score">—</b> · <span>pay</span> <b id="pay">—</b></p>
+  <p id="proj" class="banner"></p>
+
+  <h2>03 mine</h2>
+  <button type="button" id="btnMine">start mine</button>
+  <p class="hash-counter"><span id="hashRate">0</span></p>
+  <p class="found" id="mineStatus"></p>
+
+  <div id="keyfileGate" class="hidden">
+    <div class="panel warn-box" id="keyfileWarn">
+      KEYFILE REQUIRED BEFORE OP_RETURN IS SHOWN.
+
+      The keyfile holds secret, seed and salt. Without it this mint can never
+      be opened. There is no recovery path, by design. A clone site that asks
+      you to paste these into a form is stealing your mint.
+
+      Download the keyfile, store it offline, then the OP_RETURN hex appears.
+    </div>
+    <p id="recordPending"></p>
+    <button type="button" id="btnSaveKey" disabled>download keyfile</button>
+  </div>
+
+  <div id="recordBox" class="hidden">
+    <h2>04 broadcast handoff</h2>
+    <label>OP_RETURN (74-byte hex)</label>
+    <div class="panel" id="opreturn"></div>
+    <button type="button" id="btnCopyOp">copy OP_RETURN</button>
+    <p class="kv"><span>exact payment</span> <b id="payExact">—</b></p>
+    <p class="kv"><span>valid through block</span> <b id="deadline">—</b></p>
+    <label>copyable CLI notes (no custodial broadcast)</label>
+    <div class="panel" id="cliCmd"></div>
+    <button type="button" id="btnCopyCli">copy handoff</button>
+  </div>
+
+  <h2>05 reveal</h2>
+  <p class="banner">Load a keyfile. Emit both reveal OP_RETURN chunks in one transaction. Transparent in/out must match minerTag.</p>
+  <label>keyfile</label>
+  <input id="keyfileInput" type="file" accept="application/json,.json" />
+  <p id="revealMeta" class="kv"></p>
+  <label>mint index (from indexer / table after your mint lands)</label>
+  <input id="revealIndex" type="number" min="0" value="0" />
+  <button type="button" id="btnReveal">build reveal chunks</button>
+  <p id="revealStatus"></p>
+  <div id="revealOut" class="hidden">
+    <label>chunk A</label>
+    <div class="panel" id="revealA"></div>
+    <label>chunk B</label>
+    <div class="panel" id="revealB"></div>
+    <div class="panel" id="revealCli"></div>
+    <button type="button" id="btnCopyRev">copy reveal handoff</button>
+  </div>
+
+  <footer>
+    Protocol frozen at 494dfcc · digest 86105264… · art stays in Python ·
+    no embedded terminal · never paste key material into a website.
+  </footer>
+</main>
+<script type="module" src="./js/app.js"></script>
+</body>
+</html>

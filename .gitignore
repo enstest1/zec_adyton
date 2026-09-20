@@ -6,3 +6,16 @@ zvault-keys.json
 *.egg-info/
 .venv/
 venv/
+zvault/web/package/
+zvault/web/*.tgz
+zvault/web/noble-hashes*.tgz
+zvault/web/pub/vault.json
+zvault/web/pub/*.tmp
+# Accidental unpack leftovers at js/ root — real vendor is js/vendor/
+zvault/web/js/noble-*.js
+zvault/web/js/_u64.js
+zvault/web/js/_assert.js
+zvault/web/js/_blake.js
+zvault/web/js/crypto.js
+zvault/web/js/cryptoNode.js
+zvault/web/js/utils.js

@@ -1,0 +1,1567 @@
+{
+  "build_commitment": [
+    {
+      "burn": 0,
+      "commitment": "ba965bd0d634e01fba53d38bf363782dcd4b33c8c9af151063698d4f13bbbdff",
+      "money": 0,
+      "patience": 0,
+      "salt": "0000000000000000000000000000000000000000000000000000000000000000",
+      "secret": "0000000000000000000000000000000000000000000000000000000000000000",
+      "seed": "0000000000000000000000000000000000000000000000000000000000000000",
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "commitment": "af1d9cf3a6b3b6170af69c90b98f8f4575e80633d0cf7315a7ebe019a1fd1c5a",
+      "money": 0,
+      "patience": 0,
+      "salt": "926d7587611666675029b4e474d6e49c0d555cf0c285da2de96d90253879d5cd",
+      "secret": "f382e9777af6a9e829d2cbc6ad471ff8a5b392162904b741b4a557e66f20b3d5",
+      "seed": "45c0cedb050f13b2415a281dfdd496bd1e61b4282c96afc31cbb79b983991a59",
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "commitment": "93921fd7dd2c9db163d0a5b9c61139ff3a66d2ba2a52997408b99a4bccb15bf4",
+      "money": 0,
+      "patience": 0,
+      "salt": "f98f8f2da52fe2a414b4759921c65d8db8303b03dad6f2d77e41b8124b482d42",
+      "secret": "9c9a13e70478612b4d8409d2b8f21db3583b68fbe63223fd773c6a1513b216ef",
+      "seed": "6af379edd8a902f8d160c7dddd7bc8aabc5804e50a42433f74a389b16f8f9204",
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "commitment": "ac931d5488512c5694c1543d7095e048c89724f002611cce9ebbddd44edb00c4",
+      "money": 12,
+      "patience": 16,
+      "salt": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "secret": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "seed": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "commitment": "4612663046dcdf3f19a365aa6c456399ae160dc435211418d00ad448d54e3e1a",
+      "money": 12,
+      "patience": 16,
+      "salt": "9f035bd9cbeccde80bdeb10dde504b359231ba8f77b0cc751ad45aa3fbb4b71a",
+      "secret": "2ea1862eff48b3cb2209b963705b96563c099a12af6d6e6a38f6007d660881aa",
+      "seed": "b50efd6692b3ba70c9971981f26e8153d59cdb6eb8cd7725dcd82bee47e3fe22",
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "commitment": "8791864dc9c8de19bb054fbfa030d21cd2f2af5d9756078ccbe0a9db34b87c3f",
+      "money": 12,
+      "patience": 16,
+      "salt": "031b7e9e1c45e5cbcee8acb24b25daa410743da203775689e5211e5c21cbd347",
+      "secret": "886c7b0fd570241c4950c355bbc488c610a6f4ccaca774fe58e7fdc1f7cf38b9",
+      "seed": "3923c4c3a40a2c7e4a47ddb609817527c2f4807945b179d3abd8fbd9f0cf691c",
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "commitment": "8337df9021f27ec3bfe40f03575cbdb454d77f2c9a69ceca1fb03df6f9c496e8",
+      "money": 1,
+      "patience": 1,
+      "salt": "f6c195b660b597b8641426455b987a15831e58cb1e9eee92d10424619b734be0",
+      "secret": "94fbb2cb4d9775e518c981a42b44ea69950d98bb28302546c08103a85963a057",
+      "seed": "ddde54600f2e6eacd116b627efb1ec0870a14b284cc2bef66f3523334ba8b0b5",
+      "work": 1
+    },
+    {
+      "burn": 0,
+      "commitment": "fa5291e3fafc08b15f5bbe4309e2f14a4b538f388d4b9321f7b615f015671d9e",
+      "money": 1,
+      "patience": 1,
+      "salt": "659e2b82a56536a5706513283b2fc6cfddeeec1f9f3ca02e8534a6b2518dbe72",
+      "secret": "d51c96f39d96c3852fc6eeb8a1b4f025eb54550dbc64bd2d05910c0cc6f8edbc",
+      "seed": "05e0648e5c681d204a712580522fdc6ae7b6a856206655158e15d780793c97a2",
+      "work": 1
+    },
+    {
+      "burn": 0,
+      "commitment": "9763932a4e5c3e665ef4632c49530ce436882746d5d3a8f717e73ac571418421",
+      "money": 1,
+      "patience": 1,
+      "salt": "98551a5873481737e629c4cf1d7afabe9252d1db94730dadd954403426eedb53",
+      "secret": "75ffe9ae55dd6665b07aca2160ec777cfee519dd6a1a359eb96c26da6994be32",
+      "seed": "d2db209421f97263d74ee09a0d77a51de0e333944ea8fbf3aabfe4f31fa9999e",
+      "work": 1
+    },
+    {
+      "burn": 0,
+      "commitment": "456241a95ad23344f07d066f71f0d6d00b16cd6a29f433d61db8db430c9fca1e",
+      "money": 3,
+      "patience": 4,
+      "salt": "16ecd35c49af19b2fbee9957d4cb73c9a676c1af67b70f7ed1bc2fbc36ea0454",
+      "secret": "573ce19befbdd706253535905a9f9679edd52ef3dcc023df6a6d3f39acb9f52b",
+      "seed": "c7af2ed7266fcc5f71fb5a8e96b90248f0c0a362db68228eef9eadd78dfcb2a9",
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "commitment": "616a4e0322089d080df6c4612e0604d5b81ad2d715bf78107f27c9a4c32788b0",
+      "money": 3,
+      "patience": 4,
+      "salt": "3563d8ce7883b79f65d89d630d6ba438d0d28180ae657b8b3713db6d1f05986a",
+      "secret": "7d761b8f1c06e50ae6559ec8a9ac473371c8e22a8c2b874c45c79cac673bc906",
+      "seed": "5761fce78fbfea2c242f13637ea167124ac0b6751c96b019c05d2bd9d1fb6bbb",
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "commitment": "a72f9a3423eb14bb9cb48eefc0fd1debdf86ba0365732e594e78d8602bfd8a42",
+      "money": 3,
+      "patience": 4,
+      "salt": "02b8e8603eeab8fe33434731391baee9d1c53dce7bdb93236be7049ca08d8c54",
+      "secret": "bd80973fe8c5816045eac2e87398799d504def3cce8becb0950d705732639a59",
+      "seed": "56d01c3920382006e38b0734afaac921518d733288ac0d0477ab40015784cdf9",
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "commitment": "fbd9fa0ec7b5c5cb0c038e6f3dea46f85e4cfc734dbd187c22c8d4a0dd388cb2",
+      "money": 6,
+      "patience": 8,
+      "salt": "1f28d07f67bedca332c7d4889d3c77623657f7e7efe8062f06f533898ac4f3d3",
+      "secret": "0a72987170e76a707a3defc6596d4e069a06a3a8b1b83de00f83bc3bdda1e6e9",
+      "seed": "0305540b120a038f54329cdc11dda663cf6a24670f341340d946bb196f61497f",
+      "work": 3
+    },
+    {
+      "burn": 0,
+      "commitment": "6817068cac56cc00b9e34c0eabfd63c7f3d27845f4be1ba8626ab68b2be451a3",
+      "money": 6,
+      "patience": 8,
+      "salt": "5b6707956b34b607129f31f1c7482e436abb0502f3a0e4f1aebf8aa4ac5305bc",
+      "secret": "b8e02fd179ad5159c036ca49efdb0185cd070a6b45767ef5c21f640b55f7cc72",
+      "seed": "792dc059e091e905915dd36713d8df6d360dfba0269a7f341214555347811ebd",
+      "work": 3
+    },
+    {
+      "burn": 0,
+      "commitment": "2a2a994453b37bdf029c09d7318fa9afd3f8cb0a68d16b0a5ae24f87af7e4029",
+      "money": 6,
+      "patience": 8,
+      "salt": "571e065e8b02f5a93c1ee0cd1fd7c5fdbb0a05c0a2251e4cf139c27aa1483b3c",
+      "secret": "f9d54adac96aec4def92fd008beb60c73ebdcd5fa23f400180292f0688a75e87",
+      "seed": "262f5343ff12c30d2b2afc840a9d534faaa18906e2e0b675fe8d9f8fca1cf7e6",
+      "work": 3
+    },
+    {
+      "burn": 0,
+      "commitment": "8c63bcb22039e96c4dda6e9bc17b58926f4f1e9d44d9bc163659bf73a71e1f70",
+      "money": 12,
+      "patience": 16,
+      "salt": "65fd659dfa8c2169435d9117de58509c1b8735b7101b30d5ca435f52454e3e79",
+      "secret": "23ebfcda5be5782e60e17daa06ced7307cf4761e7798478987a7c7c08f4325ef",
+      "seed": "1632297af7ef82746c0f170b79d9af0b2b6e3acf44f34318cae5f2a0a09878e2",
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "commitment": "bb31c242eed41b6a98a915ef4dff94784ce1268752869eabbb9b7189710380bf",
+      "money": 12,
+      "patience": 16,
+      "salt": "15a94370b69cff81528e475d08fc9b50cfcf014ed3787691dfcf663a8d82b1d2",
+      "secret": "c1e9e80617fa24ccd1ba8ec791fd95d2253e642ed1a44a193a0dacaf76271741",
+      "seed": "588ce0a6b975e4f1afb1391cecaf42c0db9a491f33f6a79783671b2c3ce12c3c",
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "commitment": "988b3c5253a726f0535137c4c7dc9dafd7cf06ce134abae394b09c2de492de8d",
+      "money": 12,
+      "patience": 16,
+      "salt": "6ce0121ca93676052bb51073e4acdc68151a4668087ae5577cda26b625ec6ce5",
+      "secret": "879fe4988e201afc1b1b167d0d2b84e5ddd30ece9aa492f5c1de5d71a202d2c3",
+      "seed": "06bd060d0465fd3a9418b6cd2eb8bfb774b8f3c665e5f98c4b7a24871d0ad335",
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "commitment": "ff6e0a0045745028817a8ed14004471200f9bcb2b5f3964b0c44a90509814ae2",
+      "money": 0,
+      "patience": 16,
+      "salt": "8990097962384f1712c0f36cbbb780836d466a02198e4ff598c267e39e171d30",
+      "secret": "5f8522ccba1f3e36bc611c9fd5d3c38b8712700c91ee4252dd5fb4f6a089981b",
+      "seed": "8e754ad3e4d6dadc45455940d1da45291028dac04330185a8ee17886d5d4a033",
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "commitment": "809d12b53557281f7e65f5da82c14f711bd157b55baf671996a0894658cfa3b2",
+      "money": 0,
+      "patience": 16,
+      "salt": "f4ebfa6dc3070e336e5ce9a63cf03f864ae8b35a70d88a5b0042abcbb68bb444",
+      "secret": "4da26130e8c9e1d5b1dbaf31a46f2cacaa06cbbe8b3d111e6b0e78797cd95ce9",
+      "seed": "54c138594def510710c3c3ced2909f80493ea6c477391ab2b0e31e2b4aee4d2d",
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "commitment": "e906718729e3c5824729c19ea73c5a8cae908b1d1d43da6487b481ad5277611c",
+      "money": 0,
+      "patience": 16,
+      "salt": "880708d436a094c778a1dcd157b509edd9d8b877a99f0b4661f8d903d4acaa4b",
+      "secret": "32d3f7a79a55b62c21371f0cf458c7f4a6b08bfd9434496d26d395f9381ecfee",
+      "seed": "d9ae0a9a39c29a453ff61fe5b39f676527ea2bee1cb6cea05332fbd780e2ae4a",
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "commitment": "7e242a9804521f812b74580eeaac863b7af459f3affa044547e49499ca5ce777",
+      "money": 0,
+      "patience": 0,
+      "salt": "e2f0de14d7a3b98361360a9ef5ad5d8fdb66d48b644d6661d8ebcf673cd3aaf6",
+      "secret": "61be827b0b25872bccbdea228e15f4e7ba630bfc262800969a174efa86a7098f",
+      "seed": "eda5cf1debeea305af6386b182945b46da046e518671bc1b98eb3510f8e3107b",
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "commitment": "2e8d63d7d6810d3867a9525696a6544990eb096ec9b2ec776555ae6399e57e8a",
+      "money": 0,
+      "patience": 0,
+      "salt": "dcd86e9d480d72ef9f7b8c8e72c636dd09b8c3dc79e31792a55aef9ae0028b23",
+      "secret": "41b14506f353749432cf5aec72a432fb34bc744d8cb9a71a19d0461ac0d2c370",
+      "seed": "f79a8339911678ce8fb8ce342c5a3382af0d6830c0965835801a662e4ca0ad98",
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "commitment": "84a97b340a6f707d8c4934c66ea0f2475fa1271abaf583b9c5b84db0dab11d9d",
+      "money": 0,
+      "patience": 0,
+      "salt": "bd2523bd56df3d42de1d03fd648a9b56dd229e8d9a5ed192d699d18fe14f2ca5",
+      "secret": "52ae1d5e485a7921362c3f52efe9ef855aaa33054130391adae8be133a144d34",
+      "seed": "cf7e835bbf756ad02b479a8c38d25b85b32f5901d62305cfb5f7e1d4626f8a94",
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "commitment": "1e76ee4843d74168a9d736b1e6e442ee3d98334dbfd82d2b06414e3287f091b1",
+      "money": 12,
+      "patience": 0,
+      "salt": "1c074c3b737135f0e7caff23ed406f375e03ccc7d34d577a596deb6c17de811d",
+      "secret": "30c0f9a798fde5210252c0852f0d04a831ebe46d21761290c79257844d0b0827",
+      "seed": "b129be2ab41c89e4d7d1e0f2c34d6ccc0cdafeab13a2ae1bc515f5f7192f70c4",
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "commitment": "2da44f8c6d73535db425d5af54107d73ffae1fe3698dc7ebcc9545f5cbb6bd2b",
+      "money": 12,
+      "patience": 0,
+      "salt": "eb5d22d33cce3cc6c6953e3cb63514a33f8f864c94b1a03bf676696c02d6a66a",
+      "secret": "bee33370e3ce6e27d2ac4a155cb677eaef57d2f7e0a002fa04dda7eec72219ea",
+      "seed": "2fdd6092b69899c5a6318cd07f3c55eae74eb8f2441730e10d80faeb178da4ef",
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "commitment": "66b2fffc587c82c3e6c007dd9695a775a193ecf694f8ceec9bc222ca7b5dedbe",
+      "money": 12,
+      "patience": 0,
+      "salt": "9be8c3e3b55d96ea443fe5248401b347914daacec1676a1ad324260a06acf9b8",
+      "secret": "dfe16c2835dccf3655aea56ac34c0709202c1a3c7ce92f125f5c108886b17c1d",
+      "seed": "2a686f27ea39bb7c7a1de1095a57260951663ec7f3caee897d0d3e77f90dbbfe",
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "commitment": "59443b3b415f4430175098978b5099fdf53c521ccd77f7d072c749c8c4c0f258",
+      "money": 4,
+      "patience": 8,
+      "salt": "1ce3b64642a550923db6b28bb60ad03cedf6d70eba1aad930ece8afc8de3e0e2",
+      "secret": "82cd280dfb051d98e9cdc4abdcf20d3e00c624c196d2bea6c94298366764e927",
+      "seed": "776a229ef8682b00d75e083303bc0fc6c87a379db65804880860381f62b3fc3f",
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "commitment": "54bd09c65e4bfdcf99b8a44bf9f5e65a0a698f4a9e945c98217caa74b5890f13",
+      "money": 4,
+      "patience": 8,
+      "salt": "4355de63897eaf5e4deecddcf89405ca35fbc87818fe26afd4916faf9ed62d1d",
+      "secret": "0f968a273a22192984403d1557104a8e6138cb4be5e6ec010ca85a69f22f126b",
+      "seed": "10a1ccb9a0164229606587f330fdce54cdb2162fc91da8291c7d0307772924eb",
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "commitment": "b9bc3243a3d8e3011745a0ea03dc9ffec442fe9d628be33a14f0eca272283a54",
+      "money": 4,
+      "patience": 8,
+      "salt": "0ea9372819257ca0b6c3df9236b59e6e37a5a9dc3c1b7a7577299119cb073409",
+      "secret": "0d39d751864050b1deab8d96a9e1c5a27b81c84bfb98eef70c859dd59f9709fb",
+      "seed": "e26413f9ab69ea8db4a240de7266b08cc3c95497299f25e83923798a7fb80505",
+      "work": 2
+    }
+  ],
+  "build_record": [
+    {
+      "burn": 0,
+      "commitment": "93bfd8fa8531b14caa5d91b255bc8751200d01e4b454ad23d8da30c685d41313",
+      "len": 74,
+      "miner_tag": "a57e3e0ee4eb629e84089d0c1285dcc7f0c74b4d",
+      "money": 0,
+      "nonce": 0,
+      "patience": 0,
+      "record": "5a564c54020193bfd8fa8531b14caa5d91b255bc8751200d01e4b454ad23d8da30c685d41313000000000000000000000000000000a57e3e0ee4eb629e84089d0c1285dcc7f0c74b4d00",
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "commitment": "b454bdf7a5f00f8ab4da1a3a99d1a69ad7eab239aeaca07150bb61265deb31e8",
+      "len": 74,
+      "miner_tag": "aab1e06f85f95ad05c52fbe2822328c19b230d2b",
+      "money": 12,
+      "nonce": 99991,
+      "patience": 16,
+      "record": "5a564c540201b454bdf7a5f00f8ab4da1a3a99d1a69ad7eab239aeaca07150bb61265deb31e800000000000186970410000000000caab1e06f85f95ad05c52fbe2822328c19b230d2b5a",
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "commitment": "02f99d9cfe440eade59c5775ec7a89108075c9645e1922b8bd891b977762722b",
+      "len": 74,
+      "miner_tag": "3e31392366322baedd3900f4de5d948d510fd7da",
+      "money": 1,
+      "nonce": 199982,
+      "patience": 1,
+      "record": "5a564c54020102f99d9cfe440eade59c5775ec7a89108075c9645e1922b8bd891b977762722b0000000000030d2e010100000000013e31392366322baedd3900f4de5d948d510fd7daed",
+      "work": 1
+    },
+    {
+      "burn": 0,
+      "commitment": "f70160296673ca4f0300c5a6fd476e8d3644fc08d423f67b759490d873063199",
+      "len": 74,
+      "miner_tag": "13a985871c7d540e6100ae1bc4d019573e56d409",
+      "money": 3,
+      "nonce": 299973,
+      "patience": 4,
+      "record": "5a564c540201f70160296673ca4f0300c5a6fd476e8d3644fc08d423f67b759490d87306319900000000000493c50204000000000313a985871c7d540e6100ae1bc4d019573e56d40966",
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "commitment": "0fd6400500e6276a89792047405749ad3aeee7d62702ab6caa258165b29ae0fe",
+      "len": 74,
+      "miner_tag": "9f0a4d223a4d035f3582d231b3570d686a469c7c",
+      "money": 6,
+      "nonce": 399964,
+      "patience": 8,
+      "record": "5a564c5402010fd6400500e6276a89792047405749ad3aeee7d62702ab6caa258165b29ae0fe0000000000061a5c030800000000069f0a4d223a4d035f3582d231b3570d686a469c7c9b",
+      "work": 3
+    },
+    {
+      "burn": 0,
+      "commitment": "b0b19f3669bd6f93956a62ad875c8d38cbab5136059c1dbbb6dc9fe7eeb9acd1",
+      "len": 74,
+      "miner_tag": "5808846597b15470a47045fe2d309983ff9e091d",
+      "money": 12,
+      "nonce": 499955,
+      "patience": 16,
+      "record": "5a564c540201b0b19f3669bd6f93956a62ad875c8d38cbab5136059c1dbbb6dc9fe7eeb9acd1000000000007a0f30410000000000c5808846597b15470a47045fe2d309983ff9e091d2b",
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "commitment": "e53a82c9f30b9f16aac5fffa3db4ede41d44712c073ece91b50acc1d79e7522e",
+      "len": 74,
+      "miner_tag": "2ed3ddfdf76afe6d9ca484487c39d664f23819f7",
+      "money": 0,
+      "nonce": 599946,
+      "patience": 16,
+      "record": "5a564c540201e53a82c9f30b9f16aac5fffa3db4ede41d44712c073ece91b50acc1d79e7522e000000000009278a001000000000002ed3ddfdf76afe6d9ca484487c39d664f23819f7b6",
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "commitment": "0a965ffbfa8c43725d03c0320c8d692757990b653ae238d6cf67b5735be374a8",
+      "len": 74,
+      "miner_tag": "34ba6d3d8666952ff5bafc774300da35380bb0d1",
+      "money": 0,
+      "nonce": 699937,
+      "patience": 0,
+      "record": "5a564c5402010a965ffbfa8c43725d03c0320c8d692757990b653ae238d6cf67b5735be374a800000000000aae210400000000000034ba6d3d8666952ff5bafc774300da35380bb0d1a8",
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "commitment": "27c0595be7933d68066be0b3e4db01f85b1878fc6605c77125aec91e7aa66aca",
+      "len": 74,
+      "miner_tag": "27a3fc55e8f4302e282363488c5d13744dc96359",
+      "money": 12,
+      "nonce": 799928,
+      "patience": 0,
+      "record": "5a564c54020127c0595be7933d68066be0b3e4db01f85b1878fc6605c77125aec91e7aa66aca00000000000c34b80000000000000c27a3fc55e8f4302e282363488c5d13744dc9635992",
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "commitment": "7a76fab5624bd097805c1e5905aee36fcb2c942b99cd2c604cf483cbf202d9d9",
+      "len": 74,
+      "miner_tag": "d99cfddea7d990346709f246ddeb2d842688188a",
+      "money": 4,
+      "nonce": 899919,
+      "patience": 8,
+      "record": "5a564c5402017a76fab5624bd097805c1e5905aee36fcb2c942b99cd2c604cf483cbf202d9d900000000000dbb4f02080000000004d99cfddea7d990346709f246ddeb2d842688188af4",
+      "work": 2
+    }
+  ],
+  "build_reveal_chunks": [
+    {
+      "chunk_a": "5a564c540202000000e416a2a6ccfb3f2ca25fa8a31114145de1d758ef09195ffffc930e3621e878d99ee34802027cc1d4f44c888c598ecde4c5aaddef6e27aba28dc9527b5097fd9abc",
+      "chunk_b": "5a564c54020201000047dcfc9e66694115867fdff6e14522a20557206d9f73709cd0af9c3a1e0e71af4b",
+      "index": 0,
+      "len_a": 74,
+      "len_b": 42,
+      "salt": "47dcfc9e66694115867fdff6e14522a20557206d9f73709cd0af9c3a1e0e71af",
+      "secret": "e416a2a6ccfb3f2ca25fa8a31114145de1d758ef09195ffffc930e3621e878d9",
+      "seed": "9ee34802027cc1d4f44c888c598ecde4c5aaddef6e27aba28dc9527b5097fd9a"
+    },
+    {
+      "chunk_a": "5a564c540202000011d28cd87628788b61c62916b10f50368382612377ea741738a207da690033ccc4efa2d7ee046cf02266e9cc4d12330dbe937342520311a286cdf42f27c69dda9a78",
+      "chunk_b": "5a564c5402020100113a27c90cb84237a5a0743669c0cae31f7b4a6e217675c3327933f1b1493ae89541",
+      "index": 17,
+      "len_a": 74,
+      "len_b": 42,
+      "salt": "3a27c90cb84237a5a0743669c0cae31f7b4a6e217675c3327933f1b1493ae895",
+      "secret": "d28cd87628788b61c62916b10f50368382612377ea741738a207da690033ccc4",
+      "seed": "efa2d7ee046cf02266e9cc4d12330dbe937342520311a286cdf42f27c69dda9a"
+    },
+    {
+      "chunk_a": "5a564c540202000022c574494115b3ad32c0a0f3c6ef06ee748670f6202e31cba9c6baf0a61ea53fa85ad0479e8c358050e3cd6c028c3ab58081ca93c1c56cc6ca8cba0a75db89eddca4",
+      "chunk_b": "5a564c540202010022be9768cfde30cb4031e549f8cdc00efabf218533fcafcfac4447279b87babd87e0",
+      "index": 34,
+      "len_a": 74,
+      "len_b": 42,
+      "salt": "be9768cfde30cb4031e549f8cdc00efabf218533fcafcfac4447279b87babd87",
+      "secret": "c574494115b3ad32c0a0f3c6ef06ee748670f6202e31cba9c6baf0a61ea53fa8",
+      "seed": "5ad0479e8c358050e3cd6c028c3ab58081ca93c1c56cc6ca8cba0a75db89eddc"
+    },
+    {
+      "chunk_a": "5a564c540202000033317b5fc539ae29ff0800fb29e799f33890f6d94d616f51dfd6fe0e5b276facb050edff75feb8ecd3870af0f6e359788b9f28fdfe1ac021223bbe5f547934b0c3d3",
+      "chunk_b": "5a564c54020201003366079d06dc03b8385c01f652c2fdba32263012217cea0e3536c522f9e87c0cdb2e",
+      "index": 51,
+      "len_a": 74,
+      "len_b": 42,
+      "salt": "66079d06dc03b8385c01f652c2fdba32263012217cea0e3536c522f9e87c0cdb",
+      "secret": "317b5fc539ae29ff0800fb29e799f33890f6d94d616f51dfd6fe0e5b276facb0",
+      "seed": "50edff75feb8ecd3870af0f6e359788b9f28fdfe1ac021223bbe5f547934b0c3"
+    },
+    {
+      "chunk_a": "5a564c5402020000445ede44c9059450cbbb0fce7e6e9ee9141348cc3ab17fa917f791e7aa83fd129ce97cf8a78a63a36344026c322a2ae2d06ccde368d782f7c6f14f1e9c6d1603861d",
+      "chunk_b": "5a564c540202010044b1264229fb85d5b348c1dc35b4f9c4b729ff65bed068e7a862759bb56a260eee84",
+      "index": 68,
+      "len_a": 74,
+      "len_b": 42,
+      "salt": "b1264229fb85d5b348c1dc35b4f9c4b729ff65bed068e7a862759bb56a260eee",
+      "secret": "5ede44c9059450cbbb0fce7e6e9ee9141348cc3ab17fa917f791e7aa83fd129c",
+      "seed": "e97cf8a78a63a36344026c322a2ae2d06ccde368d782f7c6f14f1e9c6d160386"
+    },
+    {
+      "chunk_a": "5a564c5402020000552d6d2a356d8cb7e3760b311d42b988ff751930257ca06edacf8bdaa59c4debb383ae7ed6f6857fe0e4253e1bba7b2a949e158682a20e92ec53bb07775dafaa348e",
+      "chunk_b": "5a564c54020201005506bfbba8ed7ed7aa33a66a31be6745b2ceec8fec8c95649c961c998a7df1446174",
+      "index": 85,
+      "len_a": 74,
+      "len_b": 42,
+      "salt": "06bfbba8ed7ed7aa33a66a31be6745b2ceec8fec8c95649c961c998a7df14461",
+      "secret": "2d6d2a356d8cb7e3760b311d42b988ff751930257ca06edacf8bdaa59c4debb3",
+      "seed": "83ae7ed6f6857fe0e4253e1bba7b2a949e158682a20e92ec53bb07775dafaa34"
+    },
+    {
+      "chunk_a": "5a564c5402020000660bf1a85192847fe0532ee4f8f70b365b7b9fd53cb901b6496ca9f0228627c11e31acefdd13bc8af3b4b398c3930f70941a4b2cc3e949b1821811c781021f671f71",
+      "chunk_b": "5a564c5402020100664eb2d90e184517fa0a1238fae147a9ea42df6e80501bd9693fc724e638c6a5b08e",
+      "index": 102,
+      "len_a": 74,
+      "len_b": 42,
+      "salt": "4eb2d90e184517fa0a1238fae147a9ea42df6e80501bd9693fc724e638c6a5b0",
+      "secret": "0bf1a85192847fe0532ee4f8f70b365b7b9fd53cb901b6496ca9f0228627c11e",
+      "seed": "31acefdd13bc8af3b4b398c3930f70941a4b2cc3e949b1821811c781021f671f"
+    },
+    {
+      "chunk_a": "5a564c540202000077a23b3c4f74f77f70190a10857bc377996e8cc99cb3b583fe38e842931892004f08395d5f65d2d588a0f85d3cc18b614ec0a0b3ca93109d22569e6023f02418fbc1",
+      "chunk_b": "5a564c5402020100770625411a8ba543b58e7f23cf9b674539b56ad6dfad28868ccc54a3b041cadb4a97",
+      "index": 119,
+      "len_a": 74,
+      "len_b": 42,
+      "salt": "0625411a8ba543b58e7f23cf9b674539b56ad6dfad28868ccc54a3b041cadb4a",
+      "secret": "a23b3c4f74f77f70190a10857bc377996e8cc99cb3b583fe38e842931892004f",
+      "seed": "08395d5f65d2d588a0f85d3cc18b614ec0a0b3ca93109d22569e6023f02418fb"
+    }
+  ],
+  "challenge_for": [
+    {
+      "block_hash": "ec3f2531ecaef07584ded36b871baf074fafb6af1e66e15d65443bc57debb4ee",
+      "challenge": "9dc95fb0722e9f2c2927b125291e140d4a6b98ddfaff12db2f04ffafcaa4435d"
+    },
+    {
+      "block_hash": "98c02b5444bd5c4494acd2e6a6b0ce6b82e9f4211c6ab8620627c079a4b959ff",
+      "challenge": "947f9bdd78e3fd31c9f283fbcf49864a093e3da4a4cbeb3722f20d91ac119e43"
+    },
+    {
+      "block_hash": "df1fab051e65fdfb8f2597a51db6cf4c82609a3079dcd5f084fa75f2f23bada2",
+      "challenge": "124b1f1baa4192cdaecd2466ea5742d706b01fd5c0c1d1ef113fd8b1f4ad4266"
+    },
+    {
+      "block_hash": "23d324a52b556a345879c49a6497e826adb8cc0557b0086612564ffb0d592b74",
+      "challenge": "94e0d3a06e81fd90e649c1eb3c489ceeccb82b40749d2ecfecd64ed896c08b7b"
+    },
+    {
+      "block_hash": "80ac990e6045e160e4e775b2ef4d08387f8409967d7515dacd2155b367d5876c",
+      "challenge": "65509eab69e3db6d18c5916200444a15395cf37a5e11cf5e4788dd84f8fb7524"
+    },
+    {
+      "block_hash": "0cab284a364955e7646b022adac0bc39bf00cb19aa3a1ca60c885d8ea3354bd2",
+      "challenge": "e184ff455244520986afe8147112a06a4745f38c26af0aa3f2963e9b9758d52a"
+    },
+    {
+      "block_hash": "827f13e6401c78ee370e3c822ef2fa8db5189efb52e760598c2aa3aaa2998d17",
+      "challenge": "edd6b20d286162aa9efde3b5431a7a0830d5b70327f01d71544d74b6c0fc8bb5"
+    },
+    {
+      "block_hash": "a1021c9bd34e9e213f3434ff86d578db295a3e485f0b185aa563a191867d4439",
+      "challenge": "ec02522492e04318d975e5432e85f87e53688880e618478fc142a891a3315275"
+    },
+    {
+      "block_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "challenge": "058b308f63c2163ba77b92aab70b4b5a6cd8eb0e2439f3fe6198ba1b74d4e0bd"
+    },
+    {
+      "block_hash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "challenge": "4e6bf5bb6290c1c5bbd813c6864e185bb27904848e4e26e2e4b3b59720c7afe1"
+    }
+  ],
+  "meta": {
+    "case_count": 206,
+    "frozen_digest": "8610526427bb0463e04bee22ee40765e8b04affee66f042fb11d50d5ac905e86",
+    "magic": "5a564c54",
+    "max_burn": 0,
+    "max_money": 12,
+    "max_patience": 16,
+    "max_work_bits": 4,
+    "note": "Generated from indexer.py. JS must match byte-for-byte.",
+    "protocol_commit": "494dfcc5aba6bc4335bdcd38b58524c02dc5e3f6",
+    "version": 2,
+    "weights": {
+      "burn": 2500,
+      "money": 1000,
+      "patience": 2500,
+      "work": 4000
+    }
+  },
+  "pow_hash": [
+    {
+      "challenge": "a326625748b915022c3cd7e5e345c0f6f35c7958dc56d6ad49fe22ad62f3094f",
+      "commitment": "50f33713a551b0d8bf7bba19ad5281754cce395ad190d72ae8f5212436ea159a",
+      "miner_tag": "44c7c55077654d9e07431e63c3eda61d5a5c2159",
+      "nonce": 0,
+      "pow": "f95dd642ec138f769e4a5ffcbce9c3d8fcf481239f8d80b795a59d7d3b79c482"
+    },
+    {
+      "challenge": "b97efd4da4e9d6842cfaf1a030fe807f015ed923b15ba8a1446e9dbbcf2c6108",
+      "commitment": "407b806650327311456f68051d05208c14008a8df92d59a2d54b13dad9747c54",
+      "miner_tag": "135df503b12f26e513aec4f26128e3ba218347d9",
+      "nonce": 1000003,
+      "pow": "bfee691364ee828211d4c613a5e2b570f2acad7a33223425995c3c0025d40a5a"
+    },
+    {
+      "challenge": "8d0d5d539c790a8630fd624be169a6b282b994456b44736e92a42c88a421bca7",
+      "commitment": "684f8b742701dc2f2b9a748ad3a52274c85cae260cd3557d600866bb6b5fb51f",
+      "miner_tag": "d1a52b97e967a62d5cb16a7b8f5c4afedfa89f01",
+      "nonce": 2000006,
+      "pow": "4e4c3de68915239ad6fd3b8dfb49990cacf6e55712543fa153ed45ef796a07dd"
+    },
+    {
+      "challenge": "5dd1b02ea26c56f9e670f5e3dcc826bc81692cb89f147c072f3016942eb5d5b2",
+      "commitment": "9bab2aaa7ddd22e74de4537f44392d1391f8b4f3d4576189b586f4ca457fba19",
+      "miner_tag": "b90e403876481d7648e72c4b7e951fce1a63414a",
+      "nonce": 3000009,
+      "pow": "9775e2afe5764347cf5038b3eedff54be94e6912d08b062117802db50d353fd4"
+    },
+    {
+      "challenge": "cb1487126236b02e24a3e47503d92d2bdcf8269c9e089fec3919b86cdd6dea38",
+      "commitment": "ec721b6352ffda82b9c8a6ba682c2b70e8f87ac4eb8d064f3c4d3736252d2da2",
+      "miner_tag": "9fe112958a804432c5a6a7053d9606ae6e23c414",
+      "nonce": 4000012,
+      "pow": "0ecf2adcb19bb82846bf7c253771f5011297124e493afd4e8e45e3aabd132b4d"
+    },
+    {
+      "challenge": "c54121beaa3ca2daa5967888c331cd4294569eeea6926a2eacd4cf024d9edb15",
+      "commitment": "60520b17461a94765ba285efd8ae6df4a65b45abe7a6451b211e71560d706b2e",
+      "miner_tag": "53b95801f666835bacd3d6c084295ad2c12457b4",
+      "nonce": 5000015,
+      "pow": "f6a09a1f28724fb48faaaa83e796f717f697704a213ed4f5ea229260b3a32763"
+    },
+    {
+      "challenge": "2010d6ae983f1b50235cad146d377314545ca1fc26051d384f4881b1bbf9235b",
+      "commitment": "71a37b23a5108a547292968320c3fb8819d047a1ead31df9a86c9cbb71a0c2fe",
+      "miner_tag": "886867078fa307878279e72aaff202b20c8ac1a2",
+      "nonce": 6000018,
+      "pow": "d4985073496a5040acaf27c47845ae2e569434ac33c38aafcdee9de9caf2a2c4"
+    },
+    {
+      "challenge": "d9fd19b75ba90cafacf492c0e09135199158e4763e716098613c50589f8ff0fe",
+      "commitment": "67ccc2cdeff0dc243d07ad70e4df98752c1764dff426a80648fa8e7518689031",
+      "miner_tag": "e69bcafbcb443fc7a10c5f1f2faefa3e077e9c62",
+      "nonce": 7000021,
+      "pow": "158ef4e2e56d4ddcf893e3c5215874b7b77cffc26dbb1fb4c69cd3621e282584"
+    },
+    {
+      "challenge": "040ddfaffa631c6a5444fa544629a07132ee42656d3dbd2b8bc55d7d57429480",
+      "commitment": "c7ca6a3215f138e7265b1e2f228ab5a0e47b2174c5128ff26199db0f2745b95a",
+      "miner_tag": "01d05ba402773a01580e1e3b7d17b597c2ced084",
+      "nonce": 8000024,
+      "pow": "8751a5f4d7fcb2bf477e6084b2d62bb6ec672406e7716058c2f06c7c65bc3f92"
+    },
+    {
+      "challenge": "32db734f95d84fd5e7c803d6ced42f3790a0f8a8217bd8be2283766a6cfe642b",
+      "commitment": "6ff4f3405c1a7391fe23a8062f46f99e61d856944df936b60a3f2613d45adc26",
+      "miner_tag": "776dfdf8374cc8516ce7e6c68079dc339f371d66",
+      "nonce": 9000027,
+      "pow": "8922f9a7f3d68e8b8ac03f140acb4e8023b6c703189e89948701b79f63f744c9"
+    },
+    {
+      "challenge": "e58fb071278e400726954e4565ad70a1eb474058bbceaa6e328e5c53a99569e3",
+      "commitment": "98ccf9df72e92cbcbd8b0342d2dae8a6ff3f52ffe1a5ce44404dade7d87dcee9",
+      "miner_tag": "4b31e9d1919b31379a54ab556ea9170ae04b7246",
+      "nonce": 10000030,
+      "pow": "7e0d27e0ce52623c738a1db32715cdfd32386b63cc1b1650fffc6b24883e3670"
+    },
+    {
+      "challenge": "c6d855ec437fa209e5fcb8cea90d88a4878b3ba3e43c99c2bb05695efa9c24f6",
+      "commitment": "74e9ae45ebc0f846a4cb8868dc3234b6aa8362f13008ee3e48e95927ef2aa655",
+      "miner_tag": "0595bcf900386af606066a7b8877daa1734869fa",
+      "nonce": 11000033,
+      "pow": "08bebc17ef39adba4223a7d01e1ba6ca9e5364ee6b2101451cf5a75711dc9cdf"
+    }
+  ],
+  "score_of": [
+    {
+      "burn": 0,
+      "money": 0,
+      "patience": 0,
+      "score": 0,
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "money": 1,
+      "patience": 0,
+      "score": 28867,
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "money": 4,
+      "patience": 0,
+      "score": 57735,
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "money": 8,
+      "patience": 0,
+      "score": 81649,
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "money": 12,
+      "patience": 0,
+      "score": 100000,
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "money": 0,
+      "patience": 1,
+      "score": 62500,
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "money": 1,
+      "patience": 1,
+      "score": 91367,
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "money": 4,
+      "patience": 1,
+      "score": 120235,
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "money": 8,
+      "patience": 1,
+      "score": 144149,
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "money": 12,
+      "patience": 1,
+      "score": 162500,
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "money": 0,
+      "patience": 4,
+      "score": 125000,
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "money": 1,
+      "patience": 4,
+      "score": 153867,
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "money": 4,
+      "patience": 4,
+      "score": 182735,
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "money": 8,
+      "patience": 4,
+      "score": 206649,
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "money": 12,
+      "patience": 4,
+      "score": 225000,
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "money": 0,
+      "patience": 8,
+      "score": 176776,
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "money": 1,
+      "patience": 8,
+      "score": 205644,
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "money": 4,
+      "patience": 8,
+      "score": 234511,
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "money": 8,
+      "patience": 8,
+      "score": 258426,
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "money": 12,
+      "patience": 8,
+      "score": 276776,
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "money": 0,
+      "patience": 16,
+      "score": 250000,
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "money": 1,
+      "patience": 16,
+      "score": 278867,
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "money": 4,
+      "patience": 16,
+      "score": 307735,
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "money": 8,
+      "patience": 16,
+      "score": 331649,
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "money": 12,
+      "patience": 16,
+      "score": 350000,
+      "work": 0
+    },
+    {
+      "burn": 0,
+      "money": 0,
+      "patience": 0,
+      "score": 200000,
+      "work": 1
+    },
+    {
+      "burn": 0,
+      "money": 1,
+      "patience": 0,
+      "score": 228867,
+      "work": 1
+    },
+    {
+      "burn": 0,
+      "money": 4,
+      "patience": 0,
+      "score": 257735,
+      "work": 1
+    },
+    {
+      "burn": 0,
+      "money": 8,
+      "patience": 0,
+      "score": 281649,
+      "work": 1
+    },
+    {
+      "burn": 0,
+      "money": 12,
+      "patience": 0,
+      "score": 300000,
+      "work": 1
+    },
+    {
+      "burn": 0,
+      "money": 0,
+      "patience": 1,
+      "score": 262500,
+      "work": 1
+    },
+    {
+      "burn": 0,
+      "money": 1,
+      "patience": 1,
+      "score": 291367,
+      "work": 1
+    },
+    {
+      "burn": 0,
+      "money": 4,
+      "patience": 1,
+      "score": 320235,
+      "work": 1
+    },
+    {
+      "burn": 0,
+      "money": 8,
+      "patience": 1,
+      "score": 344149,
+      "work": 1
+    },
+    {
+      "burn": 0,
+      "money": 12,
+      "patience": 1,
+      "score": 362500,
+      "work": 1
+    },
+    {
+      "burn": 0,
+      "money": 0,
+      "patience": 4,
+      "score": 325000,
+      "work": 1
+    },
+    {
+      "burn": 0,
+      "money": 1,
+      "patience": 4,
+      "score": 353867,
+      "work": 1
+    },
+    {
+      "burn": 0,
+      "money": 4,
+      "patience": 4,
+      "score": 382735,
+      "work": 1
+    },
+    {
+      "burn": 0,
+      "money": 8,
+      "patience": 4,
+      "score": 406649,
+      "work": 1
+    },
+    {
+      "burn": 0,
+      "money": 12,
+      "patience": 4,
+      "score": 425000,
+      "work": 1
+    },
+    {
+      "burn": 0,
+      "money": 0,
+      "patience": 8,
+      "score": 376776,
+      "work": 1
+    },
+    {
+      "burn": 0,
+      "money": 1,
+      "patience": 8,
+      "score": 405644,
+      "work": 1
+    },
+    {
+      "burn": 0,
+      "money": 4,
+      "patience": 8,
+      "score": 434511,
+      "work": 1
+    },
+    {
+      "burn": 0,
+      "money": 8,
+      "patience": 8,
+      "score": 458426,
+      "work": 1
+    },
+    {
+      "burn": 0,
+      "money": 12,
+      "patience": 8,
+      "score": 476776,
+      "work": 1
+    },
+    {
+      "burn": 0,
+      "money": 0,
+      "patience": 16,
+      "score": 450000,
+      "work": 1
+    },
+    {
+      "burn": 0,
+      "money": 1,
+      "patience": 16,
+      "score": 478867,
+      "work": 1
+    },
+    {
+      "burn": 0,
+      "money": 4,
+      "patience": 16,
+      "score": 507735,
+      "work": 1
+    },
+    {
+      "burn": 0,
+      "money": 8,
+      "patience": 16,
+      "score": 531649,
+      "work": 1
+    },
+    {
+      "burn": 0,
+      "money": 12,
+      "patience": 16,
+      "score": 550000,
+      "work": 1
+    },
+    {
+      "burn": 0,
+      "money": 0,
+      "patience": 0,
+      "score": 282842,
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "money": 1,
+      "patience": 0,
+      "score": 311709,
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "money": 4,
+      "patience": 0,
+      "score": 340577,
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "money": 8,
+      "patience": 0,
+      "score": 364492,
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "money": 12,
+      "patience": 0,
+      "score": 382842,
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "money": 0,
+      "patience": 1,
+      "score": 345342,
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "money": 1,
+      "patience": 1,
+      "score": 374209,
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "money": 4,
+      "patience": 1,
+      "score": 403077,
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "money": 8,
+      "patience": 1,
+      "score": 426992,
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "money": 12,
+      "patience": 1,
+      "score": 445342,
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "money": 0,
+      "patience": 4,
+      "score": 407842,
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "money": 1,
+      "patience": 4,
+      "score": 436709,
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "money": 4,
+      "patience": 4,
+      "score": 465577,
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "money": 8,
+      "patience": 4,
+      "score": 489492,
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "money": 12,
+      "patience": 4,
+      "score": 507842,
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "money": 0,
+      "patience": 8,
+      "score": 459618,
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "money": 1,
+      "patience": 8,
+      "score": 488486,
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "money": 4,
+      "patience": 8,
+      "score": 517353,
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "money": 8,
+      "patience": 8,
+      "score": 541268,
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "money": 12,
+      "patience": 8,
+      "score": 559618,
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "money": 0,
+      "patience": 16,
+      "score": 532842,
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "money": 1,
+      "patience": 16,
+      "score": 561709,
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "money": 4,
+      "patience": 16,
+      "score": 590577,
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "money": 8,
+      "patience": 16,
+      "score": 614492,
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "money": 12,
+      "patience": 16,
+      "score": 632842,
+      "work": 2
+    },
+    {
+      "burn": 0,
+      "money": 0,
+      "patience": 0,
+      "score": 346410,
+      "work": 3
+    },
+    {
+      "burn": 0,
+      "money": 1,
+      "patience": 0,
+      "score": 375277,
+      "work": 3
+    },
+    {
+      "burn": 0,
+      "money": 4,
+      "patience": 0,
+      "score": 404145,
+      "work": 3
+    },
+    {
+      "burn": 0,
+      "money": 8,
+      "patience": 0,
+      "score": 428059,
+      "work": 3
+    },
+    {
+      "burn": 0,
+      "money": 12,
+      "patience": 0,
+      "score": 446410,
+      "work": 3
+    },
+    {
+      "burn": 0,
+      "money": 0,
+      "patience": 1,
+      "score": 408910,
+      "work": 3
+    },
+    {
+      "burn": 0,
+      "money": 1,
+      "patience": 1,
+      "score": 437777,
+      "work": 3
+    },
+    {
+      "burn": 0,
+      "money": 4,
+      "patience": 1,
+      "score": 466645,
+      "work": 3
+    },
+    {
+      "burn": 0,
+      "money": 8,
+      "patience": 1,
+      "score": 490559,
+      "work": 3
+    },
+    {
+      "burn": 0,
+      "money": 12,
+      "patience": 1,
+      "score": 508910,
+      "work": 3
+    },
+    {
+      "burn": 0,
+      "money": 0,
+      "patience": 4,
+      "score": 471410,
+      "work": 3
+    },
+    {
+      "burn": 0,
+      "money": 1,
+      "patience": 4,
+      "score": 500277,
+      "work": 3
+    },
+    {
+      "burn": 0,
+      "money": 4,
+      "patience": 4,
+      "score": 529145,
+      "work": 3
+    },
+    {
+      "burn": 0,
+      "money": 8,
+      "patience": 4,
+      "score": 553059,
+      "work": 3
+    },
+    {
+      "burn": 0,
+      "money": 12,
+      "patience": 4,
+      "score": 571410,
+      "work": 3
+    },
+    {
+      "burn": 0,
+      "money": 0,
+      "patience": 8,
+      "score": 523186,
+      "work": 3
+    },
+    {
+      "burn": 0,
+      "money": 1,
+      "patience": 8,
+      "score": 552054,
+      "work": 3
+    },
+    {
+      "burn": 0,
+      "money": 4,
+      "patience": 8,
+      "score": 580921,
+      "work": 3
+    },
+    {
+      "burn": 0,
+      "money": 8,
+      "patience": 8,
+      "score": 604836,
+      "work": 3
+    },
+    {
+      "burn": 0,
+      "money": 12,
+      "patience": 8,
+      "score": 623186,
+      "work": 3
+    },
+    {
+      "burn": 0,
+      "money": 0,
+      "patience": 16,
+      "score": 596410,
+      "work": 3
+    },
+    {
+      "burn": 0,
+      "money": 1,
+      "patience": 16,
+      "score": 625277,
+      "work": 3
+    },
+    {
+      "burn": 0,
+      "money": 4,
+      "patience": 16,
+      "score": 654145,
+      "work": 3
+    },
+    {
+      "burn": 0,
+      "money": 8,
+      "patience": 16,
+      "score": 678059,
+      "work": 3
+    },
+    {
+      "burn": 0,
+      "money": 12,
+      "patience": 16,
+      "score": 696410,
+      "work": 3
+    },
+    {
+      "burn": 0,
+      "money": 0,
+      "patience": 0,
+      "score": 400000,
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "money": 1,
+      "patience": 0,
+      "score": 428867,
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "money": 4,
+      "patience": 0,
+      "score": 457735,
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "money": 8,
+      "patience": 0,
+      "score": 481649,
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "money": 12,
+      "patience": 0,
+      "score": 500000,
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "money": 0,
+      "patience": 1,
+      "score": 462500,
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "money": 1,
+      "patience": 1,
+      "score": 491367,
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "money": 4,
+      "patience": 1,
+      "score": 520235,
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "money": 8,
+      "patience": 1,
+      "score": 544149,
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "money": 12,
+      "patience": 1,
+      "score": 562500,
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "money": 0,
+      "patience": 4,
+      "score": 525000,
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "money": 1,
+      "patience": 4,
+      "score": 553867,
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "money": 4,
+      "patience": 4,
+      "score": 582735,
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "money": 8,
+      "patience": 4,
+      "score": 606649,
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "money": 12,
+      "patience": 4,
+      "score": 625000,
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "money": 0,
+      "patience": 8,
+      "score": 576776,
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "money": 1,
+      "patience": 8,
+      "score": 605644,
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "money": 4,
+      "patience": 8,
+      "score": 634511,
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "money": 8,
+      "patience": 8,
+      "score": 658426,
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "money": 12,
+      "patience": 8,
+      "score": 676776,
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "money": 0,
+      "patience": 16,
+      "score": 650000,
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "money": 1,
+      "patience": 16,
+      "score": 678867,
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "money": 4,
+      "patience": 16,
+      "score": 707735,
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "money": 8,
+      "patience": 16,
+      "score": 731649,
+      "work": 4
+    },
+    {
+      "burn": 0,
+      "money": 12,
+      "patience": 16,
+      "score": 750000,
+      "work": 4
+    }
+  ],
+  "target_for": [
+    {
+      "bits": 20,
+      "target_hex": "0000100000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "bits": 21,
+      "target_hex": "0000080000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "bits": 22,
+      "target_hex": "0000040000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "bits": 23,
+      "target_hex": "0000020000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "bits": 24,
+      "target_hex": "0000010000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "bits": 25,
+      "target_hex": "0000008000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "bits": 26,
+      "target_hex": "0000004000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "bits": 27,
+      "target_hex": "0000002000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "bits": 28,
+      "target_hex": "0000001000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "bits": 29,
+      "target_hex": "0000000800000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "bits": 30,
+      "target_hex": "0000000400000000000000000000000000000000000000000000000000000000"
+    }
+  ]
+}

@@ -15,6 +15,8 @@ does not include a git hash you can `git checkout` yourself.
 - `CONFIRMATION_DEPTH = 10` (shallow blocks buffered, not indexed)
 - `MAX_MONEY = 12`, `MAX_BURN = 0` (burn axis stubbed; max live score 750,000)
 - No on-chain transfer; ownership is the minting address
+- Static mint page (`web/`) + epoch publisher (`zcash/publisher.py`)
+- Cross-language vectors (`web/vectors.json`) — Python + JS must match
 
 ## Deferred (explicit)
 
@@ -23,6 +25,8 @@ does not include a git hash you can `git checkout` yourself.
 - Selective-disclosure / threshold circuits as product claims
 - Memo receipt delivery path (no return UA in the mint record)
 - Royalties (none on Zcash; primary mint = lifetime revenue)
+- Custodial / in-wallet OP_RETURN broadcast (see DECISIONS.md)
+- (Blake2b in the browser is intentionally `@noble/hashes`, not WASM — decision)
 
 ## Owner actions before launch (placeholders — do not invent values)
 
@@ -40,9 +44,11 @@ cd zvault
 python zcash/indexer.py    # must print all checks passed + state digest
 python verify.py           # smoke only — not sufficient alone
 python sim.py all          # exit 0
+python web/test_vectors.py
+node web/test_vectors_js.mjs
 ```
 
 Run the indexer self-test three times; the state digest must be identical.
-Current green digest (this tree):
+Current green digest (protocol freeze 494dfcc):
 
 `8610526427bb0463e04bee22ee40765e8b04affee66f042fb11d50d5ac905e86`

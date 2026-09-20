@@ -215,6 +215,41 @@ from a published `blocks.json` without keeping their own node forever.
 Operational rule: treat node lag like an outage. Page on sync height, not
 only on process uptime.
 
+### Epoch JSON publisher (table.json / state.json)
+
+The mint page is static: it only fetches `table.json` and `state.json`. The
+publisher is the process that writes those files from the live chain.
+
+```bash
+# from zvault/ — live node
+python zcash/publisher.py \
+  --url http://127.0.0.1:8232 \
+  --out web/pub \
+  --bind 127.0.0.1:8080
+
+# offline / CI: ingest a chain.py blocks.json once, then serve
+python zcash/publisher.py --blocks blocks.json --out web/pub --bind 127.0.0.1:8080
+```
+
+What it does:
+
+- Follows the node via `chain.py` (`getblock` verbosity 2).
+- Feeds every height into `indexer.Vault` (default `CONFIRMATION_DEPTH = 10`).
+- Atomically writes `web/pub/table.json` (`Vault.table()`) and
+  `web/pub/state.json` (minted, epochs, digest, tip / indexed heights).
+- Serves that directory over HTTP with `Access-Control-Allow-Origin: *` and
+  `Cache-Control: max-age=5`.
+- Persists `web/pub/vault.json` (plain JSON snapshot) after each block so a
+  restart resumes from the last observed height — **no genesis re-scan**, no
+  pickle. Rebuilds the Vault from JSON on start. Round-trip tested by
+  `python zcash/test_publisher_snapshot.py`.
+
+If the node tip falls behind the publisher's next height, it waits (does not
+skip). Fix the node, then let it catch up. Delete `vault.json` only when you
+intentionally want a full re-index from `LAUNCH_HEIGHT - CHALLENGE_WINDOW`.
+
+Point the mint page at `http://127.0.0.1:8080/table.json` (see `web/`).
+
 ## 7. Key safety
 
 The miner needs a funded wallet on a machine you do not own. Treat it as

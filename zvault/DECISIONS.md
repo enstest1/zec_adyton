@@ -39,3 +39,37 @@ and move every absolute floor — re-tiering sealed epochs. **Do not activate
 burn under a live supply.** It is a next-version / next-collection parameter
 only; weights stay as published so a future version can enable it without
 re-pricing the formula shape.
+
+## Wallet / OP_RETURN broadcast — v1 handoff only
+
+Zashi and current mobile Zcash wallets cannot attach arbitrary `OP_RETURN`
+outputs. v1 therefore ships a **copyable CLI handoff** (zcash-cli / zallet
+notes + exact payment + deadline height), not an in-page broadcast.
+
+**Do not build a custodial broadcast path.** Taking the user's payment and
+broadcasting on their behalf puts the operator in the trust seat the whole
+auditable-indexer design was meant to avoid.
+
+A real wallet integration later needs at least:
+
+1. A wallet (or SDK) that can construct a transparent transaction with
+   **custom OP_RETURN** (74-byte mint, or two OP_RETURNs for reveal) plus a
+   transparent treasury output for the exact zatoshi amount.
+2. For reveals: the same tx must also expose a transparent input or output
+   matching the mint's `minerTag` (usually the payer's hash160).
+3. UX that never asks the user to paste `secret` / `seed` / `salt` into a
+   web form — keyfile stays local; the wallet only sees the already-built
+   OP_RETURN hex.
+4. Preferably a ZIP or wallet-standard for "data carrier + payment" so
+   mobile can do it without raw hex.
+
+Until that exists, the mint page stops at: mine → force keyfile download →
+show hex + payment + deadline → user broadcasts with their own node/CLI.
+
+## Browser blake2b — noble, not WASM — CLOSED
+
+The mint page vendors `@noble/hashes` blake2b (MIT, audited) in Web Workers.
+Correctness is guaranteed by `web/vectors.json` matching `indexer.py`, not by
+the hash backend. Do **not** switch to WASM for speed: `MAX_WORK_BITS = 4` caps
+work so speed stops mattering. A hand-rolled WASM build would add risk without
+improving the product. Keep noble; keep the vector gate.

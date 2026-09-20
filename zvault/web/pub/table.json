@@ -1,0 +1,14 @@
+{
+  "tip_height": 2900024,
+  "tip_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "valid_through_height": 2900048,
+  "minted": 0,
+  "supply_cap": 4096,
+  "base_bits": 12,
+  "floor_price_zat": 200000,
+  "epoch": {
+    "number": 0,
+    "open": false,
+    "note": "next mint opens a new epoch — demo tip (base_bits 12 for local mining)"
+  }
+}
