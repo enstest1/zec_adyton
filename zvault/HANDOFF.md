@@ -95,8 +95,8 @@ lifetime protocol revenue** unless something else is built later. Say that
 plainly in go-to-market.
 
 **Still open (blockers, not done):**
-- Burn undefined (`MAX_BURN=0` is a stopgap)
-- Reveal/transfer wire format — cut from v1 launch (SPEC/LAUNCH)
+- Burn undefined (`MAX_BURN=0` is a stopgap; next-version only — cannot activate mid-collection)
+- On-chain transfer wire format — cut from v1
 - `LAUNCH_HEIGHT` / `TREASURY` placeholders (must match chain.py ↔ indexer.py)
 - Receipt memo delivery (no return address)
 

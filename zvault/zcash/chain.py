@@ -126,35 +126,70 @@ def burned_in(tx) -> int:
     return 0
 
 
+def transparent_tags(tx) -> list:
+    """20-byte tags from transparent outputs (P2PKH scriptPubKey hash160).
+
+    minerTag is matched against these. Inputs are included when the RPC
+    exposes an address/script; verbosity-2 blocks usually have output scripts.
+    """
+    tags = []
+    for vout in tx.get("vout", []):
+        hexstr = vout.get("scriptPubKey", {}).get("hex", "")
+        # P2PKH: OP_DUP OP_HASH160 0x14 <20> OP_EQUALVERIFY OP_CHECKSIG
+        if hexstr.startswith("76a914") and len(hexstr) >= 50:
+            tags.append(bytes.fromhex(hexstr[6:46]))
+    for vin in tx.get("vin", []):
+        # Some RPCs attach prevout scriptPubKey under vin["scriptPubKey"].
+        hexstr = (vin.get("scriptPubKey") or {}).get("hex", "")
+        if hexstr.startswith("76a914") and len(hexstr) >= 50:
+            tags.append(bytes.fromhex(hexstr[6:46]))
+    return tags
+
+
 def extract_block(node: Node, height: int) -> dict:
     blk = node.call("getblock", [str(height), 2])   # verbosity 2 = full txs
     txs = []
     for tx in blk.get("tx", []):
         if isinstance(tx, str):                      # verbosity fell back to ids
             tx = node.call("getrawtransaction", [tx, 1])
-        payload = None
+        payloads = []
         for vout in tx.get("vout", []):
             got = op_return_from(vout)
             if got and got.startswith(MAGIC):
-                payload = got
-                break
-        if payload is None:
+                payloads.append(got)
+        if not payloads:
             continue
-        txs.append({
+        entry = {
             "txid": tx.get("txid"),
-            "op_return": payload.hex(),              # hex for JSON transport
             "paid_to_treasury": paid_to_treasury(tx),
             "burned": burned_in(tx),
-        })
+            "transparent_tags": [t.hex() for t in transparent_tags(tx)],
+        }
+        # Mint is a single OP_RETURN; reveal is two chunks in one tx.
+        if len(payloads) == 1:
+            entry["op_return"] = payloads[0].hex()
+        else:
+            entry["op_returns"] = [p.hex() for p in payloads]
+        txs.append(entry)
     return {"height": height, "hash": blk.get("hash"), "tx": txs}
 
 
 def rehydrate(blocks):
-    """JSON carries op_return as hex; indexer.parse_mint wants bytes."""
+    """JSON carries payloads as hex; indexer wants bytes."""
     for b in blocks:
         for tx in b["tx"]:
-            if isinstance(tx["op_return"], str):
+            if "op_return" in tx and isinstance(tx["op_return"], str):
                 tx["op_return"] = bytes.fromhex(tx["op_return"])
+            if "op_returns" in tx:
+                tx["op_returns"] = [
+                    bytes.fromhex(p) if isinstance(p, str) else p
+                    for p in tx["op_returns"]
+                ]
+            if "transparent_tags" in tx:
+                tx["transparent_tags"] = [
+                    bytes.fromhex(t) if isinstance(t, str) else t
+                    for t in tx["transparent_tags"]
+                ]
     return blocks
 
 

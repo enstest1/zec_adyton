@@ -68,11 +68,40 @@ offset  len  field
 Total 74 bytes. The limit is 80, so there are 6 spare — do not spend them
 without a version bump. Version 0x01 records are ignored by v2 indexers.
 
-**Reveal and transfer are out of v1 launch scope.** `KIND_REVEAL` /
-`KIND_TRANSFER` exist as constants only. There is no OP_RETURN wire format,
-and the indexer does not parse chain reveals. Opening today is an off-chain /
-API call to `apply_reveal` with the keyfile. Do not market on-chain reveal or
-transfer until a format is specified and tested.
+### Reveal wire (two OP_RETURNs, one transaction)
+
+Opening material is 96 bytes plus headers, so it is chunked across two
+`OP_RETURN` outputs in the **same** transaction. Bid fields are not repeated —
+the indexer already has them from the mint. A lone chunk is not a reveal.
+
+```
+Chunk A (74 bytes):
+offset  len  field
+0       4    magic          "ZVLT"
+4       1    version        0x02
+5       1    kind           0x02
+6       1    seq            0
+7       2    index          mint index, big-endian
+9       32   secret
+41      32   seed
+73      1    checksum       XOR of bytes 0..72
+
+Chunk B (42 bytes):
+0       4    magic          "ZVLT"
+4       1    version        0x02
+5       1    kind           0x02
+6       1    seq            1
+7       2    index          same mint index
+9       32   salt
+41      1    checksum       XOR of bytes 0..40
+```
+
+The reveal transaction must also carry a transparent input or output whose
+20-byte tag equals the mint's `minerTag`. Otherwise the reveal is ignored.
+
+**Transfer is out of v1.** `KIND_TRANSFER` is a reserved constant only. No
+transfer wire format ships with this collection. Ownership is the minting
+address until a later version defines moves.
 
 ## Constants
 
@@ -80,6 +109,7 @@ transfer until a format is specified and tested.
 |---|---|---|
 | `LAUNCH_HEIGHT` | set before launch | first block a mint can land in |
 | `CHALLENGE_WINDOW` | 24 blocks (~30 min) | how old a challenge block may be |
+| `CONFIRMATION_DEPTH` | 10 | only index blocks this deep under tip |
 | `EPOCH_SIZE` | 128 | mints per full epoch |
 | `SEAL_TIMEOUT` | 1152 blocks (~1 day) | max epoch length |
 | `PATIENCE_UNIT` | 1152 blocks | one patience point |
@@ -109,11 +139,20 @@ just isn't a mint.
    where `q` is the number of valid mints after block `c`. Indexers check
    the newest `c` first. `blockhash(c)` is the bytes of the hex `hash` the
    node's RPC reports.
-3. the transaction pays at least `floorPrice(q) * (1 + moneyMultiple)` to the
-   treasury in transparent outputs
+3. the transaction pays at least
+   `floor_price_epoch(epoch_as_of_challenge) * (1 + moneyMultiple)` to the
+   treasury in transparent outputs. The floor is quoted from the challenge
+   block's epoch (what the miner can see before paying), not from the epoch
+   the mint eventually joins. The prospective join-epoch is computed without
+   mutating state; the epoch is appended only after every check passes — an
+   underpaid mint must not leave an empty epoch behind.
 4. `burnAmount` matches a burn in the same transaction
 5. the commitment has not been minted before
 6. fewer than `SUPPLY_CAP` mints exist
+
+Indexers only apply a block once the observed tip is at least
+`CONFIRMATION_DEPTH` (10) blocks ahead of it. Shallower blocks are buffered,
+not indexed.
 
 Valid mints are numbered by (block height, tx index). Any number per block.
 
@@ -190,10 +229,11 @@ block reward. Using a hash a few blocks after `s` would narrow this; not done.
 
 ## Reveal
 
-Publish `(secret, seed, salt, workBits, patience, burnAmount, moneyMultiple)`
-in block `h`. Valid if the epoch sealed before `h`, if
-`h >= mintHeight + patience * 1152`, and if the opening recomputes the
-commitment with inputs equal to the recorded bid. Then:
+Publish the two reveal chunks (secret, seed / salt) in one transaction at
+height `h`. Valid if the epoch sealed before `h`, if
+`h >= mintHeight + patience * 1152`, if both chunks are present for the same
+index, if a transparent in/out matches the mint's `minerTag`, and if the
+opening recomputes the commitment with inputs equal to the recorded bid. Then:
 
     score     = floor(Σ weight_i * sqrt(x_i / max_i))     (public since mint)
     traitHash = blake2b(seed || secret || score || epochSeal)
@@ -203,7 +243,16 @@ Nobody, including the holder, can know `traitHash` before the seal. After
 the seal only the holder can. Patience in blocks means no bid can be
 stranded.
 
-Weights: work 0.40, patience 0.25, burn 0.25, money 0.10.
+Weights: work 0.40, patience 0.25, burn 0.25, money 0.10. With burn inactive
+the maximum live score is 750,000.
+
+## Digest
+
+`Vault.digest()` commits to: mint count, every commitment + mint height,
+every sealed epoch's seal and per-member tier, and every on-chain reveal's
+score + trait hash. It does **not** commit to: unconfirmed (shallow) blocks
+still in the confirmation buffer, off-chain keyfiles, art pixels, or
+transfer state (there is none in v1).
 
 ## What you actually lose
 

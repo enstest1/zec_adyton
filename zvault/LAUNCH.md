@@ -22,17 +22,21 @@ There's no folder of finished art sitting on a server. Your punk doesn't exist
 until you open the box.
 
 **3/**
-Before you mine, you place a bid on four things:
+Before you mine, you place a bid on three things:
 
 ⛏️ WORK — grind harder, better odds
 ⏳ PATIENCE — leave it sealed longer, better odds
-🔥 BURN — destroy tokens, better odds
 💵 MONEY — pay more, slightly better odds
 
-**4/**
-Money is deliberately the weakest. It's 10% of the formula.
+Burn is reserved for a later version. At launch it contributes nothing.
 
-Work is 40%.
+**4/**
+Money is deliberately the weakest. It's 10% of the published four-axis weights
+(work 40%, patience 25%, burn 25%, money 10%).
+
+With burn inactive, the maximum live score is **750,000** — not 1,000,000.
+The weights are unchanged so burn can activate in a later version without
+re-pricing the formula shape.
 
 You can buy an edge. You can't buy the outcome.
 
@@ -76,9 +80,10 @@ Buyers get a floor. You keep the secret. The sealed box itself becomes
 tradeable.
 
 **9/**
-Ownership is private.
+v1 has no on-chain transfer.
 
-The chain sees that someone mined. It doesn't see who holds what.
+Ownership is the minting address until a transfer format ships. The chain sees
+the mint; it does not move the box.
 
 **10/**
 Open it, and the art generates from your own proof.
@@ -104,8 +109,9 @@ next-best bid buys nothing.
 **Tweet 8 is still held.** Cut selective-disclosure claims until a working
 circuit exists.
 
-**Tweet 9 / transfers:** on-chain transfer is **not in v1**. Do not imply
-tradable sealed boxes on Zcash until a transfer wire format exists.
+**Tweet 9 — in the thread, not the FAQ.** v1 has no on-chain transfer.
+Ownership is the minting address until a transfer format ships. Say so plainly
+— that is the honesty-about-trust positioning.
 
 **No royalty path on Zcash.** Primary mint payments to the treasury are
 lifetime protocol revenue unless a separate off-chain or future-ZSA mechanism

@@ -414,6 +414,9 @@ class Vault:
     base_bits: int = BASE_DIFFICULTY_BITS
     seal_timeout: int = SEAL_TIMEOUT
     patience_unit: int = PATIENCE_UNIT
+    # Production default CONFIRMATION_DEPTH; self-tests use 0 so each fed
+    # block indexes immediately.
+    confirmation_depth: int = CONFIRMATION_DEPTH
 
     minted: int = 0
     commitments: list = field(default_factory=list)
@@ -424,7 +427,10 @@ class Vault:
 
     hashes: dict = field(default_factory=dict)       # height -> block hash bytes
     minted_at: dict = field(default_factory=dict)    # height -> minted after block
-    height: int = None                               # last block applied
+    epoch_quote_at: dict = field(default_factory=dict)  # height -> epoch # for floor
+    height: int = None                               # last INDEXED block
+    _obs_height: int = None                          # highest OBSERVED block
+    _buf: dict = field(default_factory=dict)         # height -> (hash, txs)
 
     # --------------------------------------------------------------- blocks
 
@@ -436,23 +442,42 @@ class Vault:
             return self.epochs[-1]
         return None
 
+    def _quote_epoch_number(self) -> int:
+        """Epoch number a miner sees for floor quoting right now."""
+        ep = self.open_epoch()
+        return ep["number"] if ep is not None else len(self.epochs)
+
     def apply_block(self, height: int, block_hash: bytes, txs=()):
-        """Feed every block, in order, with no gaps, starting at
-        launch_height - CHALLENGE_WINDOW. Returns a log of mint results."""
-        if self.height is None:
+        """Observe a block. Index it only once tip is confirmation_depth
+        blocks ahead (or immediately if confirmation_depth is 0)."""
+        if self._obs_height is None:
             if height < self.first_height():
-                return []                                # pre-history, ignore
+                return []
             if height != self.first_height():
                 raise InputError(f"stream must start at {self.first_height()}, got {height}")
-        elif height != self.height + 1:
-            raise InputError(f"gap: expected block {self.height + 1}, got {height}")
+        elif height != self._obs_height + 1:
+            raise InputError(f"gap: expected block {self._obs_height + 1}, got {height}")
 
+        self._obs_height = height
+        self._buf[height] = (block_hash, list(txs))
+
+        log = []
+        while True:
+            next_h = self.first_height() if self.height is None else self.height + 1
+            if next_h not in self._buf:
+                break
+            if self._obs_height < next_h + self.confirmation_depth:
+                break
+            bh, btxs = self._buf.pop(next_h)
+            log += self._index_block(next_h, bh, btxs)
+        return log
+
+    def _index_block(self, height: int, block_hash: bytes, txs=()):
+        """Apply a confirmed block. Called only via apply_block's depth gate."""
         self.height = height
         self.hashes[height] = block_hash
         log = []
 
-        # Timeout seal happens before this block's mints, using this block's
-        # hash. Mints in this block go into the next epoch.
         ep = self.open_epoch()
         if ep and height >= ep["open_height"] + self.seal_timeout:
             self._seal(ep, height, "timeout")
@@ -461,36 +486,87 @@ class Vault:
 
         if height >= self.launch_height:
             for pos, tx in enumerate(txs):
-                payload = tx.get("op_return")
-                if isinstance(payload, str):
-                    payload = bytes.fromhex(payload)
-                if not payload or not payload.startswith(MAGIC):
-                    continue
-                rec = parse_mint(payload)
-                if rec is None:
-                    ok, reason = False, "malformed"
-                else:
-                    ok, reason = self.apply_mint(
-                        rec, paid=tx.get("paid_to_treasury", 0),
-                        burned=tx.get("burned", 0), height=height,
-                        txid=tx.get("txid", f"{height}:{pos}"))
-                if not ok:
-                    self.rejected += 1
-                log.append({"height": height, "txid": tx.get("txid"),
-                            "ok": ok, "reason": reason})
+                log += self._apply_tx(tx, height, pos)
 
         self.minted_at[height] = self.minted
-        # Only the last CHALLENGE_WINDOW blocks can ever be looked up again.
+        self.epoch_quote_at[height] = self._quote_epoch_number()
         old = height - CHALLENGE_WINDOW - 1
         self.minted_at.pop(old, None)
+        self.epoch_quote_at.pop(old, None)
+        return log
+
+    def _tx_payloads(self, tx):
+        out = []
+        raw = tx.get("op_returns")
+        if raw is None and tx.get("op_return") is not None:
+            raw = [tx["op_return"]]
+        for p in raw or []:
+            if isinstance(p, str):
+                p = bytes.fromhex(p)
+            if p and p.startswith(MAGIC):
+                out.append(p)
+        return out
+
+    def _tx_tags(self, tx):
+        tags = []
+        for t in tx.get("transparent_tags") or []:
+            if isinstance(t, str):
+                t = bytes.fromhex(t)
+            if isinstance(t, (bytes, bytearray)) and len(t) == 20:
+                tags.append(bytes(t))
+        return tags
+
+    def _apply_tx(self, tx, height: int, pos: int):
+        payloads = self._tx_payloads(tx)
+        if not payloads:
+            return []
+        txid = tx.get("txid", f"{height}:{pos}")
+        log = []
+
+        reveal_payloads = [p for p in payloads if len(p) > 5 and p[5] == KIND_REVEAL]
+        if reveal_payloads:
+            assembled = assemble_reveal(reveal_payloads)
+            if assembled is None:
+                self.rejected += 1
+                log.append({"height": height, "txid": txid, "ok": False,
+                            "reason": "incomplete reveal"})
+            else:
+                index, secret, seed, salt = assembled
+                if index >= len(self.commitments):
+                    ok, reason = False, "no such commitment"
+                else:
+                    c = self.commitments[index]
+                    ok, reason = self.apply_reveal(
+                        index, secret, seed, salt,
+                        c["work_bits"], c["patience"],
+                        c["burn_amount"], c["money_multiple"],
+                        height, tag_witnesses=self._tx_tags(tx))
+                if not ok:
+                    self.rejected += 1
+                log.append({"height": height, "txid": txid, "ok": ok, "reason": reason})
+            return log
+
+        mint_payloads = [p for p in payloads if len(p) > 5 and p[5] == KIND_MINT]
+        if not mint_payloads:
+            return []
+        rec = parse_mint(mint_payloads[0])
+        if rec is None:
+            ok, reason = False, "malformed"
+        else:
+            ok, reason = self.apply_mint(
+                rec, paid=tx.get("paid_to_treasury", 0),
+                burned=tx.get("burned", 0), height=height, txid=txid)
+        if not ok:
+            self.rejected += 1
+        log.append({"height": height, "txid": txid, "ok": ok, "reason": reason})
         return log
 
     # ---------------------------------------------------------------- mints
 
     def _find_challenge(self, rec: MintRecord, height: int):
-        """Newest challenge first. Returns (challenge_height, quote, pow) or
-        None. Quote is minted-at-challenge (diagnostics). Difficulty is flat
-        base + workBits. Price is floor_price_epoch of the epoch the mint joins."""
+        """Newest challenge first. Returns (challenge_height, quote, pow) or None.
+        Floor is quoted from epoch_quote_at[challenge] — miner-visible — not
+        from the epoch the mint eventually joins."""
         lo = max(height - CHALLENGE_WINDOW, self.launch_height - 1)
         for hc in range(height - 1, lo - 1, -1):
             if hc not in self.hashes or hc not in self.minted_at:
@@ -505,8 +581,8 @@ class Vault:
 
     def apply_mint(self, rec: MintRecord, paid: int, burned: int,
                    height: int, txid: str):
-        """Every rejection path is explicit and returns a reason, so an
-        audit produces a diffable log rather than a silent divergence."""
+        """Reject without mutating epochs. Floor from challenge-block epoch.
+        Epoch is created/appended only after every check has passed."""
         if self.minted >= SUPPLY_CAP:
             return False, "supply exhausted"
         if rec.commitment in self.by_commitment:
@@ -516,20 +592,23 @@ class Vault:
             return False, "bad proof of work"
         hc, quote, pw = found
 
-        # Epoch (hence price) is known before we accept payment.
-        ep = self.open_epoch()
-        if ep is None:
-            ep = {"number": len(self.epochs), "open_height": height,
-                  "members": [], "seal": None, "seal_height": None,
-                  "sealed_by": None}
-            self.epochs.append(ep)
-
-        floor = floor_price_epoch(ep["number"])
+        if hc not in self.epoch_quote_at:
+            raise InputError(f"missing epoch quote for challenge {hc}")
+        floor = floor_price_epoch(self.epoch_quote_at[hc])
         want = floor * (1 + rec.money_multiple)
         if paid < want:
             return False, f"underpaid: {paid} < {want}"
         if burned < rec.burn_amount:
             return False, f"burn short: {burned} < {rec.burn_amount}"
+
+        # Prospective epoch — no mutation until accept.
+        ep = self.open_epoch()
+        created = False
+        if ep is None:
+            ep = {"number": len(self.epochs), "open_height": height,
+                  "members": [], "seal": None, "seal_height": None,
+                  "sealed_by": None}
+            created = True
 
         index = self.minted
         self.commitments.append({
@@ -540,6 +619,7 @@ class Vault:
             "patience": rec.patience,
             "burn_amount": rec.burn_amount,
             "money_multiple": rec.money_multiple,
+            "miner_tag": rec.miner_tag,
             "score": score_of(rec.work_bits, rec.patience,
                               rec.burn_amount, rec.money_multiple),
             "pow": pw,
@@ -551,6 +631,8 @@ class Vault:
             "tier": None,
         })
         self.by_commitment[rec.commitment] = index
+        if created:
+            self.epochs.append(ep)
         ep["members"].append(index)
         self.minted += 1
 
@@ -571,9 +653,6 @@ class Vault:
         ep["seal_height"] = height
         ep["sealed_by"] = why
 
-        # Rank: higher score first. Ties break on blake(seal || commitment) —
-        # a lottery fixed only when the epoch seals, not a post-solution grind.
-        # Floor: cannot sit more than one tier above what absolute score clears.
         order = sorted(
             ep["members"],
             key=lambda i: (
@@ -594,7 +673,7 @@ class Vault:
 
     def apply_reveal(self, index: int, secret: bytes, seed: bytes, salt: bytes,
                      work: int, patience: int, burn: int, money: int,
-                     height: int):
+                     height: int, tag_witnesses=None):
         if index >= len(self.commitments):
             return False, "no such commitment"
         c = self.commitments[index]
@@ -606,8 +685,22 @@ class Vault:
         if height < c["height"] + patience * self.patience_unit:
             return False, "patience not served"
 
-        # The whole reveal check: recompute the hash. No verifier, no VM.
-        if build_commitment(secret, seed, salt, work, patience, burn, money) != c["commitment"]:
+        try:
+            secret = _require_32("secret", secret)
+            seed = _require_32("seed", seed)
+            salt = _require_32("salt", salt)
+        except ValueError:
+            return False, "opening fields must be exactly 32 bytes"
+
+        # Reveal tx must carry the mint's minerTag on a transparent in/out.
+        if c["miner_tag"] not in list(tag_witnesses or []):
+            return False, "reveal tag mismatch"
+
+        try:
+            opened = build_commitment(secret, seed, salt, work, patience, burn, money)
+        except ValueError:
+            return False, "opening fields must be exactly 32 bytes"
+        if opened != c["commitment"]:
             return False, "opening does not match commitment"
         if (work, patience, burn, money) != (
             c["work_bits"], c["patience"], c["burn_amount"], c["money_multiple"]
@@ -621,9 +714,7 @@ class Vault:
     # ---------------------------------------------------------------- views
 
     def digest(self) -> str:
-        """One hash over the whole state. Two indexers agreeing on this string
-        agree on everything; disagreement points straight at the first
-        divergent mint."""
+        """One hash over mint + seal + reveal state from the block stream."""
         h = hashlib.blake2b(digest_size=32)
         h.update(struct.pack(">I", self.minted))
         for c in self.commitments:
@@ -641,27 +732,28 @@ class Vault:
         return h.hexdigest()
 
     def table(self) -> dict:
-        """The public order book: what a miner is bidding into right now.
-        Publish this at every block."""
+        """The public order book: what a miner is bidding into right now."""
         ep = self.open_epoch()
         tip_q = self.minted
+        # Tip for quoting: prefer last indexed height; fall back to observed.
+        tip_h = self.height if self.height is not None else self._obs_height
+        tip_hash = None
+        if tip_h is not None and tip_h in self.hashes:
+            tip_hash = self.hashes[tip_h].hex()
         out = {
-            "tip_height": self.height,
-            "tip_hash": self.hashes[self.height].hex() if self.height is not None else None,
-            "valid_through_height": (self.height or 0) + CHALLENGE_WINDOW,
+            "tip_height": tip_h,
+            "tip_hash": tip_hash,
+            "valid_through_height": (tip_h or 0) + CHALLENGE_WINDOW,
             "minted": self.minted,
             "supply_cap": SUPPLY_CAP,
             "base_bits": base_difficulty(tip_q, self.base_bits),
-            "floor_price_zat": floor_price_epoch(
-                ep["number"] if ep is not None else len(self.epochs)),
+            "floor_price_zat": floor_price_epoch(self._quote_epoch_number()),
             "epoch": None,
         }
         if ep is None:
             out["epoch"] = {"number": len(self.epochs), "open": False,
                             "note": "next mint opens a new epoch"}
             return out
-        # Live table: seal may not exist yet. Commitment order is a stable
-        # preview only — final ties break on blake(seal||commitment) at seal.
         if ep["seal"] is not None:
             members = sorted(
                 ep["members"],
@@ -702,7 +794,8 @@ class Vault:
 def scan(blocks, vault=None):
     """`blocks` is chain.py's output: every block from LAUNCH_HEIGHT -
     CHALLENGE_WINDOW onward, in order, each with its hash and any ZVLT txs.
-    op_return may be bytes or hex; JSON carries hex."""
+    Supports op_return (mint) or op_returns (reveal chunks); JSON carries hex.
+    """
     v = vault or Vault()
     log = []
     for blk in blocks:
@@ -748,24 +841,42 @@ def _selftest():
                                            work, patience, burn, money)
         return s
 
-    def tx_for(v, s, nonce, paid=None):
+    def tx_for(v, s, nonce, paid=None, chal_h=None):
+        """Pay floor quoted at the challenge block — what miner.py prints."""
         rec = build_record(s["commitment"], nonce, s["work"], s["patience"],
                            s["burn"], s["money"], s["tag"])
         if paid is None:
-            ep = v.open_epoch()
-            en = ep["number"] if ep else len(v.epochs)
+            if chal_h is not None:
+                en = v.epoch_quote_at[chal_h]
+            else:
+                en = v._quote_epoch_number()
             paid = floor_price_epoch(en) * (1 + s["money"])
         return {"txid": rng.randbytes(4).hex(), "op_return": rec.hex(),
                 "paid_to_treasury": paid, "burned": s["burn"]}
 
+    def mk_vault(**kw):
+        # Self-test indexes immediately; production default is CONFIRMATION_DEPTH.
+        opts = dict(launch_height=LAUNCH, base_bits=BASE, seal_timeout=40,
+                    patience_unit=10, confirmation_depth=0)
+        opts.update(kw)
+        return Vault(**opts)
+
+    def prehistory(vault):
+        hh = LAUNCH - CHALLENGE_WINDOW
+        while hh < LAUNCH:
+            vault.apply_block(hh, fake_hash(hh), [])
+            hh += 1
+        return hh
+
     # -- build the chain block by block, mining against the live vault --------
-    v = Vault(launch_height=LAUNCH, base_bits=BASE, seal_timeout=40, patience_unit=10)
+    v = mk_vault()
     blocks = []
 
     def feed(h, txs):
         blocks.append({"height": h, "hash": fake_hash(h).hex(), "tx": txs})
         return v.apply_block(h, fake_hash(h), txs)
 
+    # Prehistory must go through feed() so JSON replay has every block.
     h = LAUNCH - CHALLENGE_WINDOW
     while h < LAUNCH:
         feed(h, [])
@@ -773,12 +884,61 @@ def _selftest():
 
     print("no --blocks given, running self-test\n")
 
+    # 0. CONFIRMATION_DEPTH: a shallow block is observed but not indexed.
+    cv = mk_vault(confirmation_depth=10)
+    ch = prehistory(cv)
+    # Advance tip until the challenge window tip itself is indexed.
+    for _ in range(10):
+        cv.apply_block(ch, fake_hash(ch), [])
+        ch += 1
+    chal = LAUNCH - 1
+    early = new_bid(0, 0)
+    en = mine(cv, chal, early["commitment"], early["tag"], 0)
+    cv.apply_block(ch, fake_hash(ch), [tx_for(cv, early, en, chal_h=chal)])
+    check(cv.minted == 0,
+          "a block shallower than CONFIRMATION_DEPTH is not indexed")
+    for _ in range(10):
+        ch += 1
+        cv.apply_block(ch, fake_hash(ch), [])
+    check(cv.minted == 1 and early["commitment"] in cv.by_commitment,
+          "mint indexes once buried under CONFIRMATION_DEPTH")
+
+    # 0b. Underpaid valid PoW must not create a phantom empty epoch.
+    pv = mk_vault()
+    ph = prehistory(pv)
+    phantom = new_bid(0, 0)
+    pn = mine(pv, ph - 1, phantom["commitment"], phantom["tag"], 0)
+    before = len(pv.epochs)
+    plog = pv.apply_block(ph, fake_hash(ph),
+                          [tx_for(pv, phantom, pn, paid=0, chal_h=ph - 1)])
+    check(plog[0]["reason"].startswith("underpaid"),
+          "zero-pay valid PoW is underpaid")
+    check(len(pv.epochs) == before == 0 and pv.minted == 0,
+          "underpaid mint leaves epochs untouched (no phantom epoch)")
+
+    # 0c. Ambiguous length splits cannot both open one commitment.
+    sec, seed, salt = rng.randbytes(32), rng.randbytes(32), rng.randbytes(32)
+    c0 = build_commitment(sec, seed, salt, 0, 0, 0, 0)
+    rejected = 0
+    for bad_secret, bad_seed in (
+        (sec[:16], seed),                         # short secret
+        (sec + b"\x00", seed),                    # long secret
+        (sec, seed[:16]),                         # short seed
+        (sec[:16], sec[16:] + seed),              # classic 16||48 split
+    ):
+        try:
+            build_commitment(bad_secret, bad_seed, salt, 0, 0, 0, 0)
+        except ValueError:
+            rejected += 1
+    check(rejected == 4 and len(c0) == 32,
+          "non-32-byte (secret, seed) splits cannot build a commitment")
+
     # 1. Two racers solve the same challenge and land in the same block.
-    # a is scored high enough that rank+floor still allows oracle in a short epoch.
     a, b = new_bid(MAX_WORK_BITS, 8, money=4), new_bid(0, 0)
-    na = mine(v, h - 1, a["commitment"], a["tag"], a["work"])
-    nb = mine(v, h - 1, b["commitment"], b["tag"], b["work"])
-    log = feed(h, [tx_for(v, a, na), tx_for(v, b, nb)])
+    chal = h - 1
+    na = mine(v, chal, a["commitment"], a["tag"], a["work"])
+    nb = mine(v, chal, b["commitment"], b["tag"], b["work"])
+    log = feed(h, [tx_for(v, a, na, chal_h=chal), tx_for(v, b, nb, chal_h=chal)])
     check(all(x["ok"] for x in log), "two mints on the same challenge in one block both count")
     h += 1
 
@@ -793,10 +953,12 @@ def _selftest():
     burned_rec = burned_body + bytes([chk])
     check(parse_mint(burned_rec) is None,
           "burnAmount > MAX_BURN is rejected by parse_mint (no paid burn-short)")
+    n_ep = len(v.epochs)
     log = feed(h, [{"txid": "burntrap", "op_return": burned_rec.hex(),
                     "paid_to_treasury": floor_price_epoch(0), "burned": 0}])
     check(log[0]["reason"] == "malformed",
           "a burn>0 record is malformed on the wire, never apply_mint")
+    check(len(v.epochs) == n_ep, "malformed mint leaves epochs unchanged")
     h += 1
 
     # 2. A thief copies a's nonce and tag onto their own commitment.
@@ -804,33 +966,38 @@ def _selftest():
     thief["tag"] = a["tag"]
     log = feed(h, [tx_for(v, thief, na)])
     check(log[0]["reason"] == "bad proof of work", "a copied nonce on another commitment is rejected")
-    # ...or copies a's whole record. That mint is a's, not theirs.
     log = feed(h + 1, [tx_for(v, a, na)])
     check(log[0]["reason"] == "duplicate commitment", "replaying the exact record is rejected")
     h += 2
 
-    # 3. Stale challenge outside the window.
-    # Max work, so the stale nonce cannot pass a newer challenge by luck
-    # (at this test's 6-bit base, a 0-work nonce would ~30% of the time).
-    old = new_bid(MAX_WORK_BITS, 0)
-    n_old = mine(v, LAUNCH - 1, old["commitment"], old["tag"], MAX_WORK_BITS)
-    for _ in range(CHALLENGE_WINDOW):
-        feed(h, [])
-        h += 1
-    log = feed(h, [tx_for(v, old, n_old)])
-    check(log[0]["reason"] == "bad proof of work", "a challenge older than the window is rejected")
-    h += 1
+    # 3. Stale challenge outside the window. High base so a nonce cannot
+    #    accidentally satisfy a newer challenge inside the window.
+    sv = mk_vault(base_bits=20)
+    sh = prehistory(sv)
+    stale = new_bid(MAX_WORK_BITS, 0)
+    n_stale = mine(sv, sh - 1, stale["commitment"], stale["tag"], MAX_WORK_BITS)
+    for _ in range(CHALLENGE_WINDOW + 1):
+        sv.apply_block(sh, fake_hash(sh), [])
+        sh += 1
+    before_m = sv.minted
+    slog = sv.apply_block(sh, fake_hash(sh), [tx_for(sv, stale, n_stale)])
+    check(sv.minted == before_m
+          and any(x.get("reason") == "bad proof of work" for x in slog),
+          "a challenge older than the window is rejected")
 
-    # 4. Underpaying against the quoted price.
+    # 4. Underpaying against the challenge-quoted price — epochs unchanged.
     cheap = new_bid(0, 0, money=2)
     nc = mine(v, h - 1, cheap["commitment"], cheap["tag"], 0)
-    log = feed(h, [tx_for(v, cheap, nc, paid=floor_price_epoch(0) * 2)])
+    n_ep = len(v.epochs)
+    log = feed(h, [tx_for(v, cheap, nc, paid=floor_price_epoch(0) * 2, chal_h=h - 1)])
     check(log[0]["reason"].startswith("underpaid"), "paying less than floor x (1 + money) is rejected")
+    check(len(v.epochs) == n_ep, "underpaid mint leaves len(epochs) unchanged")
     h += 1
 
     # 5. Reveal before the epoch seals is impossible: the roll does not exist.
     ok, reason = v.apply_reveal(0, a["secret"], a["seed"], a["salt"], a["work"],
-                                a["patience"], a["burn"], a["money"], height=h + 500)
+                                a["patience"], a["burn"], a["money"], height=h + 500,
+                                tag_witnesses=[a["tag"]])
     check(reason == "epoch not sealed", "no reveal while the epoch is open")
 
     # 6. Timeout seal of a short epoch (2 mints). Epoch 0 opened at LAUNCH.
@@ -840,19 +1007,15 @@ def _selftest():
     ep0 = v.epochs[0]
     check(ep0["sealed_by"] == "timeout" and len(ep0["members"]) == 2,
           f"stalled epoch sealed by timeout at {ep0['seal_height']} with 2 mints")
-    # a bid MAX_WORK+patience clears the score floor for oracle; b does not need to.
     check(v.commitments[0]["tier"] == 4 and v.commitments[1]["tier"] < 4,
           "short contested epoch: top bid can still be oracle; weaker bid is not")
 
     # 6b. Solo minimum bid + timeout must NOT manufacture an oracle.
-    solo_v = Vault(launch_height=LAUNCH, base_bits=BASE, seal_timeout=40, patience_unit=10)
-    sh = LAUNCH - CHALLENGE_WINDOW
-    while sh < LAUNCH:
-        solo_v.apply_block(sh, fake_hash(sh), [])
-        sh += 1
+    solo_v = mk_vault()
+    sh = prehistory(solo_v)
     solo = new_bid(0, 0)
     sn = mine(solo_v, sh - 1, solo["commitment"], solo["tag"], 0)
-    solo_v.apply_block(sh, fake_hash(sh), [tx_for(solo_v, solo, sn)])
+    solo_v.apply_block(sh, fake_hash(sh), [tx_for(solo_v, solo, sn, chal_h=sh - 1)])
     sh += 1
     while solo_v.open_epoch() is not None:
         solo_v.apply_block(sh, fake_hash(sh), [])
@@ -863,37 +1026,69 @@ def _selftest():
     check(solo_tier == assign_tier(0, 1, solo_v.commitments[0]["score"]),
           "solo tier matches min(rank, score_tier+1)")
 
-    # 7. Patience in blocks: a (patience 8 = 80 test-blocks) mined at LAUNCH.
+    # 6c. Epoch advances between challenge and inclusion — still valid at quote.
+    av = mk_vault(seal_timeout=5)
+    ah = prehistory(av)
+    # Open epoch 0 with one mint.
+    s0 = new_bid(0, 0)
+    n0 = mine(av, ah - 1, s0["commitment"], s0["tag"], 0)
+    av.apply_block(ah, fake_hash(ah), [tx_for(av, s0, n0, chal_h=ah - 1)])
+    ah += 1
+    # Mine a second bid against epoch-0 quote, then let timeout seal before include.
+    s1 = new_bid(0, 0)
+    chal1 = ah - 1
+    assert av.epoch_quote_at[chal1] == 0
+    quote_floor = floor_price_epoch(0)
+    n1 = mine(av, chal1, s1["commitment"], s1["tag"], 0)
+    while av.open_epoch() is not None:
+        av.apply_block(ah, fake_hash(ah), [])
+        ah += 1
+    check(av.epochs[0]["sealed_by"] == "timeout", "advance setup: epoch 0 timed out")
+    # Include paying the challenge quote (200k), joining epoch 1.
+    alog = av.apply_block(ah, fake_hash(ah),
+                          [tx_for(av, s1, n1, paid=quote_floor, chal_h=chal1)])
+    check(alog[0]["ok"] and av.commitments[-1]["epoch"] == 1,
+          "mint whose epoch advanced since challenge is still valid at quoted floor")
+    check(av.commitments[-1]["floor_zat"] == quote_floor,
+          "floor_zat recorded from challenge epoch, not join epoch")
+
+    # 7. Patience in blocks + minerTag binding on reveal.
     unlock_a = LAUNCH + a["patience"] * 10
     ok, reason = v.apply_reveal(0, a["secret"], a["seed"], a["salt"], a["work"],
                                 a["patience"], a["burn"], a["money"],
-                                height=ep0["seal_height"] + 1)
+                                height=ep0["seal_height"] + 1,
+                                tag_witnesses=[a["tag"]])
     check(reason == "patience not served",
           "reveal before patience unlock is rejected even if epoch is sealed")
     ok, reason = v.apply_reveal(0, a["secret"], a["seed"], a["salt"], a["work"],
                                 a["patience"], a["burn"], a["money"],
-                                height=max(unlock_a, ep0["seal_height"] + 1))
+                                height=max(unlock_a, ep0["seal_height"] + 1),
+                                tag_witnesses=[b"\x00" * 20])
+    check(reason == "reveal tag mismatch", "a reveal from a different tag is rejected")
+    ok, reason = v.apply_reveal(0, a["secret"], a["seed"], a["salt"], a["work"],
+                                a["patience"], a["burn"], a["money"],
+                                height=max(unlock_a, ep0["seal_height"] + 1),
+                                tag_witnesses=[a["tag"]])
     check(ok, f"patience is blocks, not epochs: {reason}")
     ok, reason = v.apply_reveal(1, b["secret"], rng.randbytes(32), b["salt"], b["work"],
-                                b["patience"], b["burn"], b["money"], height=h)
+                                b["patience"], b["burn"], b["money"], height=h,
+                                tag_witnesses=[b["tag"]])
     check(reason == "opening does not match commitment", "wrong seed cannot open")
     ok, reason = v.apply_reveal(1, b["secret"], b["seed"], b["salt"], b["work"] + 1,
-                                b["patience"], b["burn"], b["money"], height=h)
+                                b["patience"], b["burn"], b["money"], height=h,
+                                tag_witnesses=[b["tag"]])
     check(not ok, "inflated bid cannot open")
 
     # patience-blocked case: a patience-16 bid is never stranded, just waits.
     slow = new_bid(0, 16)
     ns = mine(v, h - 1, slow["commitment"], slow["tag"], 0)
-    feed(h, [tx_for(v, slow, ns)])
+    feed(h, [tx_for(v, slow, ns, chal_h=h - 1)])
     slow_i, slow_h = v.minted - 1, h
     h += 1
 
-    # 8. Fill a full epoch of 128 across many blocks with competitive bids so
-    #    the score floor does not demote the rank table (8/16/32/32/40).
-    bids = {}
+    # 8. Fill a full epoch of 128 with competitive bids.
     while v.open_epoch() is not None and len(v.open_epoch()["members"]) < EPOCH_SIZE:
         ep = v.open_epoch()
-        en = ep["number"]
         need = EPOCH_SIZE - len(ep["members"])
         txs = []
         for _ in range(min(need, rng.randint(1, 12))):
@@ -901,9 +1096,7 @@ def _selftest():
                         0, rng.randint(2, MAX_MONEY))
             hc = h - rng.randint(1, 3)
             n = mine(v, hc, s["commitment"], s["tag"], s["work"])
-            txs.append(tx_for(v, s, n,
-                              paid=floor_price_epoch(en) * (1 + s["money"])))
-            bids[s["commitment"]] = s
+            txs.append(tx_for(v, s, n, chal_h=hc))
         feed(h, txs)
         h += 1
     ep = v.epochs[1]
@@ -927,76 +1120,26 @@ def _selftest():
             break
     check(mono, "rank is score descending, ties to blake(seal||commitment)")
 
-    # 8b. After an early timeout, no later epoch mixes two floor prices.
-    floors_by_ep = {}
-    for c in v.commitments:
-        floors_by_ep.setdefault(c["epoch"], set()).add(c["floor_zat"])
-    mixed = {e: fs for e, fs in floors_by_ep.items() if len(fs) > 1}
-    check(not mixed, f"each epoch has one quoted floor (mixed={mixed})")
-
-    # 9. Grinding is dead: same bid, same seed and secret, different seal ->
-    #    different punk. The miner cannot know the seal when they commit.
-    s0 = v.commitments[slow_i]
-    t1 = trait_hash_of(slow["seed"], slow["secret"], s0["score"], v.epochs[1]["seal"])
-    t2 = trait_hash_of(slow["seed"], slow["secret"], s0["score"], blake(b"another seal"))
+    # 9. Grinding is dead.
+    s0c = v.commitments[slow_i]
+    t1 = trait_hash_of(slow["seed"], slow["secret"], s0c["score"], v.epochs[1]["seal"])
+    t2 = trait_hash_of(slow["seed"], slow["secret"], s0c["score"], blake(b"another seal"))
     check(t1 != t2, "trait hash depends on the seal, which did not exist at commit time")
 
     ok, reason = v.apply_reveal(slow_i, slow["secret"], slow["seed"], slow["salt"],
-                                0, 16, 0, 0, height=slow_h + 16 * 10 - 1)
+                                0, 16, 0, 0, height=slow_h + 16 * 10 - 1,
+                                tag_witnesses=[slow["tag"]])
     check(reason == "patience not served", "patience 16 waits 16 units")
     ok, reason = v.apply_reveal(slow_i, slow["secret"], slow["seed"], slow["salt"],
-                                0, 16, 0, 0, height=slow_h + 16 * 10)
+                                0, 16, 0, 0, height=slow_h + 16 * 10,
+                                tag_witnesses=[slow["tag"]])
     check(ok, "...and then opens. No bid can be sealed forever")
 
-    # 10. Epoch-priced staircase: after early timeout, fill later epochs and
-    #     assert each epoch has exactly one floor_zat (no mixed quote table).
-    u = Vault(launch_height=LAUNCH, base_bits=BASE, seal_timeout=40, patience_unit=10)
-    uh = LAUNCH - CHALLENGE_WINDOW
-    while uh < LAUNCH:
-        u.apply_block(uh, fake_hash(uh), [])
-        uh += 1
-    s = new_bid(0, 0)
-    u.apply_block(uh, fake_hash(uh),
-                  [tx_for(u, s, mine(u, uh - 1, s["commitment"], s["tag"], 0))])
-    uh += 1
-    while u.open_epoch() is not None:
-        u.apply_block(uh, fake_hash(uh), [])
-        uh += 1
-    check(u.epochs[0]["sealed_by"] == "timeout" and len(u.epochs[0]["members"]) == 1,
-          "uniformity setup: early timeout with 1 mint")
-    # Fill epochs 1 and 2 to completion (full 128 each).
-    while len([e for e in u.epochs if e.get("seal")]) < 3:
-        ep = u.open_epoch()
-        if ep is None:
-            s = new_bid(0, 0)
-            u.apply_block(uh, fake_hash(uh),
-                          [tx_for(u, s, mine(u, uh - 1, s["commitment"], s["tag"], 0))])
-            uh += 1
-            continue
-        en = ep["number"]
-        need = EPOCH_SIZE - len(ep["members"])
-        txs = []
-        for _ in range(min(need, 16)):
-            s = new_bid(0, 0)
-            txs.append(tx_for(u, s, mine(u, uh - 1, s["commitment"], s["tag"], 0),
-                              paid=floor_price_epoch(en)))
-        u.apply_block(uh, fake_hash(uh), txs)
-        uh += 1
-    bad = {}
-    for c in u.commitments:
-        bad.setdefault(c["epoch"], set()).add(c["floor_zat"])
-    mixed = {e: sorted(fs) for e, fs in bad.items() if len(fs) > 1}
-    check(not mixed,
-          f"after short timeout, no later epoch mixes floors (mixed={mixed})")
-    # Epoch 0 (short) and epoch 1 (full) both use epochs < 2 → same 200k floor;
-    # epoch 2 is still < 8 → 500k. Spot-check schedule.
+    # 10. Flat base + live score floors.
     check(floor_price_epoch(0) == floor_price_epoch(1) == 200_000, "epochs 0-1 floor")
     check(floor_price_epoch(2) == 500_000, "epoch 2 floor step")
     check(base_difficulty(0) == base_difficulty(3000) == BASE_DIFFICULTY_BITS,
           "base difficulty is flat at BASE_DIFFICULTY_BITS")
-
-    # Score floors track the live maximum (750k with burn stubbed; 1e6 when burn
-    # is live). Hardcoded 840k cutoffs made oracle unreachable under MAX_BURN=0.
     live = max_live_score()
     floors = score_floors()
     check(tier_by_score(live) == 4,
@@ -1006,14 +1149,52 @@ def _selftest():
     check(floors == (0, 150_000, 315_000, 480_000, 630_000),
           f"live floors are 150/315/480/630k under current caps ({floors})")
 
-    # 11. Determinism, and the JSON path that chain.py actually produces.
+    # 11. End-to-end reveal READ FROM BLOCKS (not API).
+    rv = mk_vault(seal_timeout=8, patience_unit=1)
+    rh = prehistory(rv)
+    rb = new_bid(0, 0)   # patience 0 → unlock immediately after seal+1
+    rn = mine(rv, rh - 1, rb["commitment"], rb["tag"], 0)
+    rv.apply_block(rh, fake_hash(rh), [tx_for(rv, rb, rn, chal_h=rh - 1)])
+    rh += 1
+    while rv.open_epoch() is not None:
+        rv.apply_block(rh, fake_hash(rh), [])
+        rh += 1
+    idx = 0
+    ca, cb = build_reveal_chunks(idx, rb["secret"], rb["seed"], rb["salt"])
+    # Wrong tag on chain → reject.
+    bad = rv.apply_block(rh, fake_hash(rh), [{
+        "txid": "badtag", "op_returns": [ca.hex(), cb.hex()],
+        "transparent_tags": [(b"\xff" * 20).hex()],
+    }])
+    check(bad[0]["reason"] == "reveal tag mismatch",
+          "on-chain reveal with wrong transparent tag is rejected")
+    rh += 1
+    # Lone chunk is not a reveal.
+    lone = rv.apply_block(rh, fake_hash(rh), [{
+        "txid": "lone", "op_returns": [ca.hex()],
+        "transparent_tags": [rb["tag"].hex()],
+    }])
+    check(lone[0]["reason"] == "incomplete reveal", "a lone reveal chunk is not a reveal")
+    rh += 1
+    good = rv.apply_block(rh, fake_hash(rh), [{
+        "txid": "reveal0", "op_returns": [ca.hex(), cb.hex()],
+        "transparent_tags": [rb["tag"].hex()],
+    }])
+    check(good[0]["ok"] and idx in rv.revealed,
+          f"mint->seal->patience->reveal from blocks: {good[0]['reason']}")
+    want_th = trait_hash_of(rb["seed"], rb["secret"], rv.commitments[idx]["score"],
+                            rv.epochs[0]["seal"])
+    check(rv.revealed[idx]["trait_hash"] == want_th,
+          "on-chain reveal yields the expected trait hash")
+
+    # 12. Determinism: JSON replay of the main chain (API reveals stripped).
     w, _ = scan(json.loads(json.dumps(blocks)),
-                Vault(launch_height=LAUNCH, base_bits=BASE, seal_timeout=40, patience_unit=10))
+                mk_vault())
     check(w.digest() == Vault.digest(_strip_reveals(v)),
           "replaying the chain from JSON (hex op_return) gives the same digest")
 
     try:
-        Vault(launch_height=LAUNCH).apply_block(LAUNCH, b"x" * 32)
+        mk_vault().apply_block(LAUNCH, b"x" * 32)
         check(False, "a stream with the wrong start is refused")
     except InputError:
         check(True, "a stream with the wrong start is refused, not silently indexed")
@@ -1027,8 +1208,8 @@ def _selftest():
 
 
 def _strip_reveals(v):
-    """Reveals are applied through the API in the self-test, not from chain
-    records, so compare the chain-derived part of the state."""
+    """API reveals in the main self-test path are not in `blocks`; compare
+    the chain-derived mint/seal state only."""
     import copy
     w = copy.copy(v)
     w.revealed = {}
