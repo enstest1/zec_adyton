@@ -11,6 +11,10 @@ zvault/web/*.tgz
 zvault/web/noble-hashes*.tgz
 zvault/web/pub/vault.json
 zvault/web/pub/*.tmp
+zvault/web/pub/punks/
+zvault/web/pub/collection.json
+zvault/.zcash-regtest/
+zvault/.zcash-testnet/
 # Accidental unpack leftovers at js/ root — real vendor is js/vendor/
 zvault/web/js/noble-*.js
 zvault/web/js/_u64.js

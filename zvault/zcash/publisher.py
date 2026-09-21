@@ -15,6 +15,9 @@ Writes (atomically) into --out:
   table.json     Vault.table()
   state.json     {minted, epochs, digest, tip_height, obs_height, ...}
   vault.json     full Vault snapshot for resume
+  punks/N.png    rendered sprite for each revealed index (Python generate.py)
+  punks/N.json   traits + verify one-liner
+  collection.json gallery index of revealed punks
 
 Serves those files with Access-Control-Allow-Origin: * and short cache.
 """
@@ -32,6 +35,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import chain as ch  # noqa: E402
 import indexer as ix  # noqa: E402
+import art_render as art  # noqa: E402
 
 SNAPSHOT_VERSION = 1
 
@@ -232,9 +236,13 @@ def write_public(out: Path, vault: ix.Vault) -> None:
         "supply_cap": ix.SUPPLY_CAP,
         "max_live_score": ix.max_live_score(),
         "score_floors": list(ix.score_floors()),
+        "revealed": len(vault.revealed),
+        "revealed_indices": sorted(vault.revealed.keys()),
     }
     atomic_write(out / "table.json", json.dumps(table, indent=2) + "\n")
     atomic_write(out / "state.json", json.dumps(state, indent=2) + "\n")
+    # PNG + traits for every reveal — product surface, still Python-only.
+    art.sync_art(out, vault)
 
 
 class CorsHandler(SimpleHTTPRequestHandler):

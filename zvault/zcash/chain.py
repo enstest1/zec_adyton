@@ -104,11 +104,24 @@ def paid_to_treasury(tx, treasury=TREASURY) -> int:
     is invisible to everyone but the recipient, so an indexer could not confirm
     it and neither could anyone auditing the indexer. The mint payment is the
     one part of this protocol that must be public.
+
+    Prefer `valueZat` when the RPC provides it — float `value` * 1e8 can
+    round wrong on some amounts. Accept both `addresses` (array) and
+    singular `address` (some lightwalletd / Zaino shapes).
     """
     total = 0
     for vout in tx.get("vout", []):
-        addrs = vout.get("scriptPubKey", {}).get("addresses") or []
-        if treasury in addrs:
+        spk = vout.get("scriptPubKey", {}) or {}
+        addrs = list(spk.get("addresses") or [])
+        if spk.get("address"):
+            addrs.append(spk["address"])
+        if treasury not in addrs:
+            continue
+        if "valueZat" in vout:
+            total += int(vout["valueZat"])
+        elif "valueSat" in vout:
+            total += int(vout["valueSat"])
+        else:
             total += int(round(float(vout.get("value", 0)) * 1e8))
     return total
 

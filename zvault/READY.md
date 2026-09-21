@@ -17,12 +17,24 @@ does not include a git hash you can `git checkout` yourself.
 - `MAX_MONEY = 12`, `MAX_BURN = 0` (burn axis stubbed; max live score 750,000)
 - No on-chain transfer; ownership is the minting address
 - Static mint page (`web/`) + epoch publisher (`zcash/publisher.py`)
+- **Art on reveal:** publisher runs `generate.derive_tier` + draw (Python only),
+  writes `pub/punks/{n}.png` + `.json`, serves `collection.json` /
+  `collection.html`; mint page can watch for your punk after reveal
 - Cross-language vectors (`web/vectors.json`) — Python + JS must match
+
+## Not ready (blocking launch)
+
+- **P0.3 testnet dry run** — no real node reached; see `TESTNET.md`. No mainnet
+  until that file has real mint/reveal txids.
+- **Owner constants** — `TREASURY` / `LAUNCH_HEIGHT` still placeholders.
+  `python web/test_owner_constants.py` **fails on purpose** until both files
+  share a real treasury (matching placeholders do not pass).
 
 ## Deferred (explicit)
 
 - Burn mechanism — next version / next collection only; cannot activate mid-mint
-- On-chain transfer wire format
+- On-chain transfer wire format / reveal-time ZRC-721 (see `MARKETPLACE.md`)
+- Browser broadcast / burner path (P1)
 - Selective-disclosure / threshold circuits as product claims
 - Memo receipt delivery path (no return UA in the mint record)
 - Royalties (none on Zcash; primary mint = lifetime revenue)
@@ -50,21 +62,26 @@ Patience and work do not change payment — only score.
 2. **Set `TREASURY`** to the real transparent treasury address in
    `zcash/indexer.py` **and** `web/js/config.js` (must match exactly). The mint
    page hardcodes it — it never reads treasury from table/state JSON.
+3. **Provide a synced testnet RPC** (or finish docker pull) and complete
+   `TESTNET.md` with real txids.
 
-Both must match exactly across every indexer. Hardware GPU bench is **not** a
-blocker — 26-bit mints do not require special hardware.
+Both treasury strings must match exactly across every indexer. Hardware GPU
+bench is **not** a blocker — 26-bit mints do not require special hardware.
 
 ## Gate
 
 ```bash
 cd zvault
-python zcash/indexer.py    # must print all checks passed + state digest
-python verify.py           # smoke only — not sufficient alone
-python sim.py all          # exit 0
+python zcash/indexer.py                 # digest must match below
+python verify.py                        # smoke only
+python sim.py all
 python web/test_vectors.py
 node web/test_vectors_js.mjs
 node web/test_page_security.mjs
 python zcash/test_publisher_snapshot.py
+python zcash/test_art_pipeline.py       # mint→seal→reveal→PNG
+python web/test_owner_constants.py      # fails until owner sets TREASURY
+# + TESTNET.md cycle with real txids before mainnet
 ```
 
 Run the indexer self-test three times; the state digest must be identical.

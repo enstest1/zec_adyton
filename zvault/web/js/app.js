@@ -304,6 +304,33 @@ async function prepareReveal(entry) {
   $("revealOut").classList.remove("hidden");
 }
 
+/** Poll pub/ for the rendered punk after the reveal tx confirms. */
+async function watchMyPunk(index) {
+  $("revealStatus").textContent = `watching for punk #${index}…`;
+  for (let i = 0; i < 120; i++) {
+    try {
+      await refreshTable();
+      const r = await fetch(`./pub/punks/${index}.json`);
+      if (r.ok) {
+        const t = await r.json();
+        $("myPunk").classList.remove("hidden");
+        $("punkImg").src = `./pub/punks/${index}.png?t=${Date.now()}`;
+        $("punkTier").textContent = t.tier_name || t.tier || "—";
+        $("punkIndex").textContent = String(index);
+        $("punkTraits").textContent = [
+          "chassis", "palette", "visor", "hood", "vent", "mark", "aura",
+        ].map((k) => `${k}:${t[k]}`).join(" · ");
+        $("punkVerify").textContent = t.verify || "";
+        $("revealStatus").textContent = `punk #${index} landed`;
+        return;
+      }
+    } catch (_) { /* keep polling */ }
+    await new Promise((res) => setTimeout(res, 2500));
+  }
+  $("revealStatus").textContent =
+    `punk #${index} not in pub/ yet — is the publisher running?`;
+}
+
 async function boot() {
   $("trust").textContent =
     "This page is static. After load it only fetches same-origin table.json / state.json. " +
@@ -363,6 +390,10 @@ async function boot() {
     prepareReveal(window.__revealKey).catch((e) => alert(e));
   };
   $("btnCopyRev").onclick = () => copyText("revealCli");
+  $("btnWatchPunk").onclick = () => {
+    const index = +$("revealIndex").value;
+    watchMyPunk(index).catch((e) => alert(e));
+  };
 }
 
 boot();

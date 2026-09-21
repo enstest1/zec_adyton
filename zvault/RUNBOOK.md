@@ -215,10 +215,11 @@ from a published `blocks.json` without keeping their own node forever.
 Operational rule: treat node lag like an outage. Page on sync height, not
 only on process uptime.
 
-### Epoch JSON publisher (table.json / state.json)
+### Epoch JSON publisher (table.json / state.json / art)
 
-The mint page is static: it only fetches `table.json` and `state.json`. The
-publisher is the process that writes those files from the live chain.
+The mint page is static: it only fetches `table.json`, `state.json`, and
+(after reveal) `punks/{n}.png`. The publisher is the process that writes those
+files from the live chain.
 
 ```bash
 # from zvault/ — live node
@@ -243,12 +244,17 @@ What it does:
   restart resumes from the last observed height — **no genesis re-scan**, no
   pickle. Rebuilds the Vault from JSON on start. Round-trip tested by
   `python zcash/test_publisher_snapshot.py`.
+- On each reveal, renders art via `art/generate.py` (`derive_tier` + `draw`)
+  into `web/pub/punks/{index}.png` + `.json`, and refreshes
+  `web/pub/collection.json`. Gallery: `web/collection.html`. Self-test:
+  `python zcash/test_art_pipeline.py`.
 
 If the node tip falls behind the publisher's next height, it waits (does not
 skip). Fix the node, then let it catch up. Delete `vault.json` only when you
 intentionally want a full re-index from `LAUNCH_HEIGHT - CHALLENGE_WINDOW`.
 
-Point the mint page at `http://127.0.0.1:8080/table.json` (see `web/`).
+Serve the mint page from the same origin as `pub/` (see `web/README.md`).
+Real-node dry run: `TESTNET.md` (currently blocked until a node is available).
 
 ## 7. Key safety
 
