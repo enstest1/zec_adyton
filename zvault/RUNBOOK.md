@@ -174,8 +174,20 @@ The indexer does not talk to the network. It reads a block stream from
 
 | choice | role |
 |---|---|
-| **zcashd** alone | validator + RPC in one process; `chain.py` points `--url` at it |
-| **Zebra + Zaino** | Zebra validates; Zaino (`zainod`) serves the wallet/explorer RPC subset `chain.py` expects — preferred long-term |
+| **Zebra (zebrad)** alone or **Zebra + Zaino** | preferred — zcashd is EOL; do not deploy new zcashd |
+| ~~zcashd alone~~ | **EOL — do not use** |
+
+**RPC source for production (launch decision):**
+
+| choice | Steady-state (~1 block / 75s) | Initial backfill / resync |
+|---|---|---|
+| Tatum free (5 req/min) | OK | **NO** — thousands of heights at 5/min is days |
+| Tatum paid key | OK | OK (rate limit high enough) |
+| Self-hosted Zebra (GHCR) | OK | OK — preferred for operator |
+
+**The Tatum free tier is a launch decision, not a detail.** Production needs a
+paid key or self-hosted Zebra. Free tier may be used only for tip-following
+experiments after the chain window is already indexed.
 
 **Approximate resources for a mainnet full node** (order of magnitude; re-check
 at setup — the chain grows):

@@ -1,96 +1,101 @@
 # TESTNET.md — real-node dry run status
 
-**Status: BLOCKED — no live Zcash node reached in this session.**
+**Status: P0.3 still OPEN — reads unblocked on hosted zebrad; no mint/reveal txids yet.**
 
 Protocol digest (unchanged):  
 `81508c848ed7511a5e018b5f7e47051ec260e72ac8b9e2329b25721343294635`
 
-P0.3 requires a full cycle on a **real** node with **real txids**. That did
-not happen here. Do not treat synthetic `indexer.py` self-tests as a substitute.
+## Do NOT use zcashd
 
-## What was attempted (2026-09-20)
+**zcashd is end-of-life.** The ecosystem has moved to **zebrad**. Do **not**
+retry `electriccoinco/zcashd` (Docker Hub / CloudFront) — that image is a dead
+end even if the pull succeeds. Wallet work that depended on zcashd's built-in
+wallet is also gone; next options are **Zallet** or our own transparent signer
+(P1.1).
 
-| Probe | Result |
+## N1 endpoint probe — Tatum hosted zebrad (2026-09-20 / 21)
+
+**URL:** `https://zcash-testnet-zebrad.gateway.tatum.io`
+
+### What it supports (measured)
+
+| Check | Result |
 |---|---|
-| Local RPC `127.0.0.1:8232` / `:18232` | No listener |
-| `zcash-cli` / `zebrad` / `zainod` on PATH | Not installed |
-| `docker pull electriccoinco/zcashd:v6.10.0` | Failed twice (CloudFront `EOF` mid-layer) |
-| Public testnet sync | Not started (image unavailable) |
+| `chain.py --url … probe` | **OK** — `chain=test`, height ≈ **4,373,065**, synced ≈ 1.0 |
+| API key required for basic reads? | **No** (unauthenticated JSON-RPC returned `getblockchaininfo` / `getblockcount` / `getbestblockhash`) |
+| Fake `x-api-key: test` | **401** — “Authentication required… Tatum API key” (bad key ≠ no key) |
+| Free-tier rate limit | **5 requests / minute** without a paid plan (HTTP 429). Unusable for publisher follow-loop without a key / paid plan or self-hosted node |
+| `getblock(hash\|height, 1)` | **OK** — full header object |
+| `getblock(…, 2)` | **OK** — `tx[]` are **full transaction objects** (dicts), not bare txids. `chain.py` depends on this and it matches |
+| Tx shape | Includes `vin`/`vout`, `hex`, `value` + **`valueZat`**, `scriptPubKey.hex`, **`scriptPubKey.addresses[]`** (testnet `tm…`). No singular `address` field on samples |
+| `sendrawtransaction` | **Method is present** — garbage hex returned JSON-RPC **`-22`** (`io error: failed to fill whole buffer` = deserialize fail), **not** method-not-found / HTTP 403. So this gateway is **not read-only at the method layer**. Whether a *valid* tx is actually relayed to peers is **unverified** until we broadcast one (rate limits blocked further probes in-session) |
 
-**No mint txid. No reveal txid. No PNG from a chain-sourced reveal.**
+### What this unblocks vs what it does not
 
-## Required cycle (run when a node is available)
+**Unblocks (indexer / publisher / page half):**
 
-```bash
-# 1. Node (testnet preferred; regtest acceptable for RPC-shape rehearsal only)
-docker run -d --name zvault-tn \
-  -p 18232:18232 \
-  -v zvault-zcash-data:/home/zcash/.zcash \
-  electriccoinco/zcashd:v6.10.0 \
-  -testnet -server -rpcuser=zvault -rpcpassword=CHANGE_ME \
-  -rpcallowip=0.0.0.0/0 -rpcbind=0.0.0.0
+- Live tip + block hashes for challenges
+- Full verbosity-2 extraction for OP_RETURN / P2PKH tags / treasury amounts
+  via `valueZat` + `addresses[]`
+- Exercising `chain.py` + publisher against real testnet blocks (slowly, or
+  with a Tatum API key / paid plan to raise the 5 rpm cap)
 
-# Wait until getblockchaininfo.blocks is current and verificationprogress ≈ 1
+**Launch decision — Tatum free tier is not production:**
 
-# 2. Probe + extract
-cd zvault
-python zcash/chain.py probe --url http://127.0.0.1:18232 --user zvault --password CHANGE_ME
+Free tier is **5 requests / minute**. That is adequate for **steady-state**
+indexing (~1 `getblock` per ~75s block), but **NOT** for:
 
-# 3. Owner sets TREASURY + LAUNCH_HEIGHT in indexer.py AND web/js/config.js
-#    (web/test_owner_constants.py must pass)
+- initial backfill from `LAUNCH_HEIGHT` (thousands of heights → days at 5/min)
+- resync after the publisher dies mid-epoch
 
-# 4. Publisher
-python zcash/publisher.py --url http://127.0.0.1:18232 --user zvault --password CHANGE_ME \
-  --out web/pub --bind 127.0.0.1:8080
+**Production must use a paid Tatum key or self-hosted Zebra.** Treat this as an
+owner launch decision, not an implementation detail. See RUNBOOK.md.
 
-# 5. Page: python -m http.server 5500 --directory web
-# 6. Mine against live table, broadcast mint with OP_RETURN + treasury pay
-# 7. Wait CONFIRMATION_DEPTH; confirm indexer credits mint
-# 8. Wait seal (128 mints or SEAL_TIMEOUT); broadcast reveal
-# 9. Confirm web/pub/punks/<index>.png exists and traits match derive_tier
-```
+**Does not finish P0.3 alone:**
 
-Record in this file after a successful run:
+- Still need a **wallet/signer** to build mint + reveal txs (zebrad has no
+  wallet; zcashd wallet is gone)
+- Still need confirmed **broadcast** of a valid tx and recorded **txids**
+- Free tier 5 rpm cannot run a continuous publisher without throttling or a key
 
-- chain / height at start
-- mint txid + height
-- seal height + sealed_by
-- reveal txid + height
-- punk index + trait_hash
-- digest after reveal
-- every RPC shape surprise (fill the table below)
+### Next cheapest paths (only if Tatum is insufficient)
 
-## Expected surprises vs fixtures (from RPC docs — unverified on a live node)
+**(b)** Self-host Zebra from GHCR (not Docker Hub):  
+`ghcr.io/zcashfoundation/zebra` — record disk / sync time / peak RAM for RUNBOOK.
 
-These are **hypotheses from published zcashd RPC docs / issues**, not live
-observations. Mark each `confirmed` / `absent` / `different` during the dry run.
+**(c)** Zebra from source or GitHub release binary.
 
-| Area | Fixture / code assumption | Real RPC risk |
+## Recommended re-sequence (owner decision)
+
+**Agree: build P1.1 transparent builder/signer first, then use it for the
+testnet mint/reveal.** That validates NU5 sighash against a real chain and
+removes dependence on zcashd's dead wallet. Hold implementation until the
+owner confirms this report.
+
+## Real txids (fill when dry run completes)
+
+| Step | txid / height | notes |
 |---|---|---|
-| `getblock(h, 2)` | Full tx objects with `vout[].scriptPubKey.hex` | Still documented; confirm verbosity-2 objects include `hex` scriptPubKey |
-| OP_RETURN push | Bare push for ≤75 bytes (`6a` + len + data) | 74-byte mint fits bare push; longer future payloads need `OP_PUSHDATA1` (already handled in `op_return_from`) |
-| Treasury pay | `scriptPubKey.addresses[]` contains TREASURY | Docs still show `addresses` array; some proxies may emit singular `address` — `paid_to_treasury` now accepts both |
-| Amount | `float(value) * 1e8` | Prefer `valueZat` / `valueSat` — **code updated** to prefer integer zat fields |
-| Transparent tag | P2PKH `76a914…88ac` on vouts; optional vin scriptPubKey | Vin rarely carries prevout script without spentindex — reveal may need a change output to `minerTag`, not only an input |
-| Address format | mainnet `t1…` | testnet transparent is `tm…` — TREASURY on testnet must be a testnet address |
-| Confirmation depth | tip − 10 indexed | Confirm `getblockchaininfo.blocks` vs tip behaviour under reorgs |
-| Zaino vs zcashd | Same JSON-RPC subset | Field names may differ; probe both if using Zaino |
+| mint | _pending_ | |
+| indexer credit | _pending_ | |
+| epoch seal | _pending_ | |
+| reveal | _pending_ | |
+| PNG rendered | _pending_ | |
 
-## Preemptive code change (not a protocol rule)
+## RPC vs fixtures (live observations so far)
 
-`zcash/chain.py` `paid_to_treasury` now:
+| Area | Fixture assumption | Live Tatum/zebrad |
+|---|---|---|
+| `getblock(..., 2)` | full tx objects | **Confirmed** |
+| Amounts | float `value` | **`valueZat` present** — prefer it (`chain.py` already does) |
+| Addresses | `addresses[]` | **Confirmed** (`tm…` on testnet) |
+| OP_RETURN | `6a` + push in `scriptPubKey.hex` | Shape compatible; no ZVLT MAGIC on recent tip (expected) |
+| Transparent tags | P2PKH `76a914…88ac` | **Confirmed** on coinbase/outs |
+| Broadcast | n/a | `sendrawtransaction` exists; valid relay **TBD** |
 
-1. Matches `addresses[]` **or** singular `address`
-2. Prefers `valueZat` / `valueSat` over float `value`
+## Owner unblock checklist
 
-Indexer mint/seal/reveal rules untouched. Digest must remain
-`81508c848ed7511a…`.
-
-## Owner unblock
-
-1. Provide a synced testnet (or regtest) RPC endpoint, **or** a machine that
-   can finish `docker pull electriccoinco/zcashd`.
-2. Set real `TREASURY` + `LAUNCH_HEIGHT` (testnet-appropriate).
-3. Re-run the cycle above and paste txids into this file.
-
-Until then, **mainnet is forbidden** by P0.3.
+1. Confirm P1.1-before-dry-run re-sequence (recommended: yes).
+2. Optional: Tatum API key / paid plan so publisher is not stuck at 5 rpm.
+3. Or stand up `ghcr.io/zcashfoundation/zebra` on testnet and point chain.py at it.
+4. After signer exists: mint → credit → seal → reveal → PNG; paste txids above.
