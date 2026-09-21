@@ -32,9 +32,9 @@
     },
     {
       "burn": 0,
-      "commitment": "ac931d5488512c5694c1543d7095e048c89724f002611cce9ebbddd44edb00c4",
+      "commitment": "d83862630e73f5b0437f2933875da3ae7e9d7012b4bfa905cb1952c367ecb243",
       "money": 12,
-      "patience": 16,
+      "patience": 7,
       "salt": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
       "secret": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
       "seed": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
@@ -42,9 +42,9 @@
     },
     {
       "burn": 0,
-      "commitment": "4612663046dcdf3f19a365aa6c456399ae160dc435211418d00ad448d54e3e1a",
+      "commitment": "22318b6627bba0053c710f582217208fa86d3572419288ad4abdb7b5fc776f8c",
       "money": 12,
-      "patience": 16,
+      "patience": 7,
       "salt": "9f035bd9cbeccde80bdeb10dde504b359231ba8f77b0cc751ad45aa3fbb4b71a",
       "secret": "2ea1862eff48b3cb2209b963705b96563c099a12af6d6e6a38f6007d660881aa",
       "seed": "b50efd6692b3ba70c9971981f26e8153d59cdb6eb8cd7725dcd82bee47e3fe22",
@@ -52,9 +52,9 @@
     },
     {
       "burn": 0,
-      "commitment": "8791864dc9c8de19bb054fbfa030d21cd2f2af5d9756078ccbe0a9db34b87c3f",
+      "commitment": "0635425340f3d1b13857701bd5336ca52799fe6e41c048b4d799b522f9a3c45d",
       "money": 12,
-      "patience": 16,
+      "patience": 7,
       "salt": "031b7e9e1c45e5cbcee8acb24b25daa410743da203775689e5211e5c21cbd347",
       "secret": "886c7b0fd570241c4950c355bbc488c610a6f4ccaca774fe58e7fdc1f7cf38b9",
       "seed": "3923c4c3a40a2c7e4a47ddb609817527c2f4807945b179d3abd8fbd9f0cf691c",
@@ -320,8 +320,8 @@
       "miner_tag": "aab1e06f85f95ad05c52fbe2822328c19b230d2b",
       "money": 12,
       "nonce": 99991,
-      "patience": 16,
-      "record": "5a564c540201b454bdf7a5f00f8ab4da1a3a99d1a69ad7eab239aeaca07150bb61265deb31e800000000000186970410000000000caab1e06f85f95ad05c52fbe2822328c19b230d2b5a",
+      "patience": 7,
+      "record": "5a564c540201b454bdf7a5f00f8ab4da1a3a99d1a69ad7eab239aeaca07150bb61265deb31e800000000000186970407000000000caab1e06f85f95ad05c52fbe2822328c19b230d2b4d",
       "work": 4
     },
     {
@@ -538,12 +538,12 @@
     }
   ],
   "meta": {
-    "case_count": 206,
+    "case_count": 156,
     "frozen_digest": "8610526427bb0463e04bee22ee40765e8b04affee66f042fb11d50d5ac905e86",
     "magic": "5a564c54",
     "max_burn": 0,
     "max_money": 12,
-    "max_patience": 16,
+    "max_patience": 7,
     "max_work_bits": 4,
     "note": "Generated from indexer.py. JS must match byte-for-byte.",
     "protocol_commit": "494dfcc5aba6bc4335bdcd38b58524c02dc5e3f6",
@@ -681,140 +681,70 @@
       "burn": 0,
       "money": 0,
       "patience": 1,
-      "score": 62500,
+      "score": 94491,
       "work": 0
     },
     {
       "burn": 0,
       "money": 1,
       "patience": 1,
-      "score": 91367,
+      "score": 123358,
       "work": 0
     },
     {
       "burn": 0,
       "money": 4,
       "patience": 1,
-      "score": 120235,
+      "score": 152226,
       "work": 0
     },
     {
       "burn": 0,
       "money": 8,
       "patience": 1,
-      "score": 144149,
+      "score": 176140,
       "work": 0
     },
     {
       "burn": 0,
       "money": 12,
       "patience": 1,
-      "score": 162500,
+      "score": 194491,
       "work": 0
     },
     {
       "burn": 0,
       "money": 0,
       "patience": 4,
-      "score": 125000,
+      "score": 188982,
       "work": 0
     },
     {
       "burn": 0,
       "money": 1,
       "patience": 4,
-      "score": 153867,
+      "score": 217849,
       "work": 0
     },
     {
       "burn": 0,
       "money": 4,
       "patience": 4,
-      "score": 182735,
+      "score": 246717,
       "work": 0
     },
     {
       "burn": 0,
       "money": 8,
       "patience": 4,
-      "score": 206649,
+      "score": 270631,
       "work": 0
     },
     {
       "burn": 0,
       "money": 12,
       "patience": 4,
-      "score": 225000,
-      "work": 0
-    },
-    {
-      "burn": 0,
-      "money": 0,
-      "patience": 8,
-      "score": 176776,
-      "work": 0
-    },
-    {
-      "burn": 0,
-      "money": 1,
-      "patience": 8,
-      "score": 205644,
-      "work": 0
-    },
-    {
-      "burn": 0,
-      "money": 4,
-      "patience": 8,
-      "score": 234511,
-      "work": 0
-    },
-    {
-      "burn": 0,
-      "money": 8,
-      "patience": 8,
-      "score": 258426,
-      "work": 0
-    },
-    {
-      "burn": 0,
-      "money": 12,
-      "patience": 8,
-      "score": 276776,
-      "work": 0
-    },
-    {
-      "burn": 0,
-      "money": 0,
-      "patience": 16,
-      "score": 250000,
-      "work": 0
-    },
-    {
-      "burn": 0,
-      "money": 1,
-      "patience": 16,
-      "score": 278867,
-      "work": 0
-    },
-    {
-      "burn": 0,
-      "money": 4,
-      "patience": 16,
-      "score": 307735,
-      "work": 0
-    },
-    {
-      "burn": 0,
-      "money": 8,
-      "patience": 16,
-      "score": 331649,
-      "work": 0
-    },
-    {
-      "burn": 0,
-      "money": 12,
-      "patience": 16,
-      "score": 350000,
+      "score": 288982,
       "work": 0
     },
     {
@@ -856,140 +786,70 @@
       "burn": 0,
       "money": 0,
       "patience": 1,
-      "score": 262500,
+      "score": 294491,
       "work": 1
     },
     {
       "burn": 0,
       "money": 1,
       "patience": 1,
-      "score": 291367,
+      "score": 323358,
       "work": 1
     },
     {
       "burn": 0,
       "money": 4,
       "patience": 1,
-      "score": 320235,
+      "score": 352226,
       "work": 1
     },
     {
       "burn": 0,
       "money": 8,
       "patience": 1,
-      "score": 344149,
+      "score": 376140,
       "work": 1
     },
     {
       "burn": 0,
       "money": 12,
       "patience": 1,
-      "score": 362500,
+      "score": 394491,
       "work": 1
     },
     {
       "burn": 0,
       "money": 0,
       "patience": 4,
-      "score": 325000,
+      "score": 388982,
       "work": 1
     },
     {
       "burn": 0,
       "money": 1,
       "patience": 4,
-      "score": 353867,
+      "score": 417849,
       "work": 1
     },
     {
       "burn": 0,
       "money": 4,
       "patience": 4,
-      "score": 382735,
+      "score": 446717,
       "work": 1
     },
     {
       "burn": 0,
       "money": 8,
       "patience": 4,
-      "score": 406649,
+      "score": 470631,
       "work": 1
     },
     {
       "burn": 0,
       "money": 12,
       "patience": 4,
-      "score": 425000,
-      "work": 1
-    },
-    {
-      "burn": 0,
-      "money": 0,
-      "patience": 8,
-      "score": 376776,
-      "work": 1
-    },
-    {
-      "burn": 0,
-      "money": 1,
-      "patience": 8,
-      "score": 405644,
-      "work": 1
-    },
-    {
-      "burn": 0,
-      "money": 4,
-      "patience": 8,
-      "score": 434511,
-      "work": 1
-    },
-    {
-      "burn": 0,
-      "money": 8,
-      "patience": 8,
-      "score": 458426,
-      "work": 1
-    },
-    {
-      "burn": 0,
-      "money": 12,
-      "patience": 8,
-      "score": 476776,
-      "work": 1
-    },
-    {
-      "burn": 0,
-      "money": 0,
-      "patience": 16,
-      "score": 450000,
-      "work": 1
-    },
-    {
-      "burn": 0,
-      "money": 1,
-      "patience": 16,
-      "score": 478867,
-      "work": 1
-    },
-    {
-      "burn": 0,
-      "money": 4,
-      "patience": 16,
-      "score": 507735,
-      "work": 1
-    },
-    {
-      "burn": 0,
-      "money": 8,
-      "patience": 16,
-      "score": 531649,
-      "work": 1
-    },
-    {
-      "burn": 0,
-      "money": 12,
-      "patience": 16,
-      "score": 550000,
+      "score": 488982,
       "work": 1
     },
     {
@@ -1031,140 +891,70 @@
       "burn": 0,
       "money": 0,
       "patience": 1,
-      "score": 345342,
+      "score": 377333,
       "work": 2
     },
     {
       "burn": 0,
       "money": 1,
       "patience": 1,
-      "score": 374209,
+      "score": 406200,
       "work": 2
     },
     {
       "burn": 0,
       "money": 4,
       "patience": 1,
-      "score": 403077,
+      "score": 435068,
       "work": 2
     },
     {
       "burn": 0,
       "money": 8,
       "patience": 1,
-      "score": 426992,
+      "score": 458983,
       "work": 2
     },
     {
       "burn": 0,
       "money": 12,
       "patience": 1,
-      "score": 445342,
+      "score": 477333,
       "work": 2
     },
     {
       "burn": 0,
       "money": 0,
       "patience": 4,
-      "score": 407842,
+      "score": 471824,
       "work": 2
     },
     {
       "burn": 0,
       "money": 1,
       "patience": 4,
-      "score": 436709,
+      "score": 500691,
       "work": 2
     },
     {
       "burn": 0,
       "money": 4,
       "patience": 4,
-      "score": 465577,
+      "score": 529559,
       "work": 2
     },
     {
       "burn": 0,
       "money": 8,
       "patience": 4,
-      "score": 489492,
+      "score": 553474,
       "work": 2
     },
     {
       "burn": 0,
       "money": 12,
       "patience": 4,
-      "score": 507842,
-      "work": 2
-    },
-    {
-      "burn": 0,
-      "money": 0,
-      "patience": 8,
-      "score": 459618,
-      "work": 2
-    },
-    {
-      "burn": 0,
-      "money": 1,
-      "patience": 8,
-      "score": 488486,
-      "work": 2
-    },
-    {
-      "burn": 0,
-      "money": 4,
-      "patience": 8,
-      "score": 517353,
-      "work": 2
-    },
-    {
-      "burn": 0,
-      "money": 8,
-      "patience": 8,
-      "score": 541268,
-      "work": 2
-    },
-    {
-      "burn": 0,
-      "money": 12,
-      "patience": 8,
-      "score": 559618,
-      "work": 2
-    },
-    {
-      "burn": 0,
-      "money": 0,
-      "patience": 16,
-      "score": 532842,
-      "work": 2
-    },
-    {
-      "burn": 0,
-      "money": 1,
-      "patience": 16,
-      "score": 561709,
-      "work": 2
-    },
-    {
-      "burn": 0,
-      "money": 4,
-      "patience": 16,
-      "score": 590577,
-      "work": 2
-    },
-    {
-      "burn": 0,
-      "money": 8,
-      "patience": 16,
-      "score": 614492,
-      "work": 2
-    },
-    {
-      "burn": 0,
-      "money": 12,
-      "patience": 16,
-      "score": 632842,
+      "score": 571824,
       "work": 2
     },
     {
@@ -1206,140 +996,70 @@
       "burn": 0,
       "money": 0,
       "patience": 1,
-      "score": 408910,
+      "score": 440901,
       "work": 3
     },
     {
       "burn": 0,
       "money": 1,
       "patience": 1,
-      "score": 437777,
+      "score": 469768,
       "work": 3
     },
     {
       "burn": 0,
       "money": 4,
       "patience": 1,
-      "score": 466645,
+      "score": 498636,
       "work": 3
     },
     {
       "burn": 0,
       "money": 8,
       "patience": 1,
-      "score": 490559,
+      "score": 522550,
       "work": 3
     },
     {
       "burn": 0,
       "money": 12,
       "patience": 1,
-      "score": 508910,
+      "score": 540901,
       "work": 3
     },
     {
       "burn": 0,
       "money": 0,
       "patience": 4,
-      "score": 471410,
+      "score": 535392,
       "work": 3
     },
     {
       "burn": 0,
       "money": 1,
       "patience": 4,
-      "score": 500277,
+      "score": 564259,
       "work": 3
     },
     {
       "burn": 0,
       "money": 4,
       "patience": 4,
-      "score": 529145,
+      "score": 593127,
       "work": 3
     },
     {
       "burn": 0,
       "money": 8,
       "patience": 4,
-      "score": 553059,
+      "score": 617041,
       "work": 3
     },
     {
       "burn": 0,
       "money": 12,
       "patience": 4,
-      "score": 571410,
-      "work": 3
-    },
-    {
-      "burn": 0,
-      "money": 0,
-      "patience": 8,
-      "score": 523186,
-      "work": 3
-    },
-    {
-      "burn": 0,
-      "money": 1,
-      "patience": 8,
-      "score": 552054,
-      "work": 3
-    },
-    {
-      "burn": 0,
-      "money": 4,
-      "patience": 8,
-      "score": 580921,
-      "work": 3
-    },
-    {
-      "burn": 0,
-      "money": 8,
-      "patience": 8,
-      "score": 604836,
-      "work": 3
-    },
-    {
-      "burn": 0,
-      "money": 12,
-      "patience": 8,
-      "score": 623186,
-      "work": 3
-    },
-    {
-      "burn": 0,
-      "money": 0,
-      "patience": 16,
-      "score": 596410,
-      "work": 3
-    },
-    {
-      "burn": 0,
-      "money": 1,
-      "patience": 16,
-      "score": 625277,
-      "work": 3
-    },
-    {
-      "burn": 0,
-      "money": 4,
-      "patience": 16,
-      "score": 654145,
-      "work": 3
-    },
-    {
-      "burn": 0,
-      "money": 8,
-      "patience": 16,
-      "score": 678059,
-      "work": 3
-    },
-    {
-      "burn": 0,
-      "money": 12,
-      "patience": 16,
-      "score": 696410,
+      "score": 635392,
       "work": 3
     },
     {
@@ -1381,140 +1101,70 @@
       "burn": 0,
       "money": 0,
       "patience": 1,
-      "score": 462500,
+      "score": 494491,
       "work": 4
     },
     {
       "burn": 0,
       "money": 1,
       "patience": 1,
-      "score": 491367,
+      "score": 523358,
       "work": 4
     },
     {
       "burn": 0,
       "money": 4,
       "patience": 1,
-      "score": 520235,
+      "score": 552226,
       "work": 4
     },
     {
       "burn": 0,
       "money": 8,
       "patience": 1,
-      "score": 544149,
+      "score": 576140,
       "work": 4
     },
     {
       "burn": 0,
       "money": 12,
       "patience": 1,
-      "score": 562500,
+      "score": 594491,
       "work": 4
     },
     {
       "burn": 0,
       "money": 0,
       "patience": 4,
-      "score": 525000,
+      "score": 588982,
       "work": 4
     },
     {
       "burn": 0,
       "money": 1,
       "patience": 4,
-      "score": 553867,
+      "score": 617849,
       "work": 4
     },
     {
       "burn": 0,
       "money": 4,
       "patience": 4,
-      "score": 582735,
+      "score": 646717,
       "work": 4
     },
     {
       "burn": 0,
       "money": 8,
       "patience": 4,
-      "score": 606649,
+      "score": 670631,
       "work": 4
     },
     {
       "burn": 0,
       "money": 12,
       "patience": 4,
-      "score": 625000,
-      "work": 4
-    },
-    {
-      "burn": 0,
-      "money": 0,
-      "patience": 8,
-      "score": 576776,
-      "work": 4
-    },
-    {
-      "burn": 0,
-      "money": 1,
-      "patience": 8,
-      "score": 605644,
-      "work": 4
-    },
-    {
-      "burn": 0,
-      "money": 4,
-      "patience": 8,
-      "score": 634511,
-      "work": 4
-    },
-    {
-      "burn": 0,
-      "money": 8,
-      "patience": 8,
-      "score": 658426,
-      "work": 4
-    },
-    {
-      "burn": 0,
-      "money": 12,
-      "patience": 8,
-      "score": 676776,
-      "work": 4
-    },
-    {
-      "burn": 0,
-      "money": 0,
-      "patience": 16,
-      "score": 650000,
-      "work": 4
-    },
-    {
-      "burn": 0,
-      "money": 1,
-      "patience": 16,
-      "score": 678867,
-      "work": 4
-    },
-    {
-      "burn": 0,
-      "money": 4,
-      "patience": 16,
-      "score": 707735,
-      "work": 4
-    },
-    {
-      "burn": 0,
-      "money": 8,
-      "patience": 16,
-      "score": 731649,
-      "work": 4
-    },
-    {
-      "burn": 0,
-      "money": 12,
-      "patience": 16,
-      "score": 750000,
+      "score": 688982,
       "work": 4
     }
   ],

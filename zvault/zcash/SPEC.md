@@ -58,7 +58,7 @@ offset  len  field
 6       32   commitment     blake2b-256
 38      8    nonce          the PoW solution
 46      1    workBits       difficulty bid above base
-47      1    patience       units of 1152 blocks (~1 day) sealed before reveal
+47      1    patience       0..MAX_PATIENCE units of 1152 blocks (~1 day each)
 48      4    burnAmount     whole token units, big-endian
 52      1    moneyMultiple  premium paid over floor
 53      20   minerTag       free-form 20 bytes (see below)
@@ -114,8 +114,10 @@ address until a later version defines moves.
 | `SEAL_TIMEOUT` | 1152 blocks (~1 day) | max epoch length |
 | `PATIENCE_UNIT` | 1152 blocks | one patience point |
 | `MAX_WORK_BITS` | 4 | provisional; flat base 22 + 4 = 26 bits max |
+| `MAX_PATIENCE` | 7 | 0–7 days; one unit = `PATIENCE_UNIT` |
 | `BASE_DIFFICULTY_BITS` | 22 | flat for the whole collection |
 | `MAX_BURN` | 0 | burn undefined — axis stubbed until defined |
+| `MAX_MONEY` | 12 | payment multiple above floor |
 | `SUPPLY_CAP` | 4096 | |
 
 Indexers consume **every** block from `LAUNCH_HEIGHT - CHALLENGE_WINDOW`

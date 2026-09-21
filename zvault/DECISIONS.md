@@ -40,6 +40,16 @@ burn under a live supply.** It is a next-version / next-collection parameter
 only; weights stay as published so a future version can enable it without
 re-pricing the formula shape.
 
+## Patience — MAX_PATIENCE = 7 — CLOSED
+
+Two weeks was too long for this audience. Cap is **7 days** (`MAX_PATIENCE = 7`,
+`PATIENCE_UNIT` still 1152 blocks). Maxing patience still saturates the
+patience weight, so `max_live_score()` stays **750,000** and
+`score_floors()` stay 150/315/480/630k — asserted in the indexer self-test.
+
+Money must **not** buy earlier reveal. Patience stays the odds/time lever;
+money stays a weak score lever. Anyone who wants to open fast picks patience 0.
+
 ## Wallet / OP_RETURN broadcast — v1 handoff only
 
 Zashi and current mobile Zcash wallets cannot attach arbitrary `OP_RETURN`

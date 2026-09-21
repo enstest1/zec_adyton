@@ -8,6 +8,7 @@ does not include a git hash you can `git checkout` yourself.
 - Auditable mint indexer (`zcash/indexer.py`) over public Zcash blocks
 - Block-hash challenge, commitment-bound PoW, flat base difficulty 22
 - `MAX_WORK_BITS = 4` (hardest mint = 26 bits; ~17s on two Python cores)
+- `MAX_PATIENCE = 7` (0–7 days; `PATIENCE_UNIT` = 1152 blocks)
 - Epoch seal + rank tiers with live score floors (`score_floors()` → 150/315/480/630k)
 - Seal lottery tiebreak: `blake2b(epochSeal || commitment)`
 - Floor price by **challenge-block epoch**; epoch created only after accept
@@ -27,6 +28,20 @@ does not include a git hash you can `git checkout` yourself.
 - Royalties (none on Zcash; primary mint = lifetime revenue)
 - Custodial / in-wallet OP_RETURN broadcast (see DECISIONS.md)
 - (Blake2b in the browser is intentionally `@noble/hashes`, not WASM — decision)
+
+## Revenue (owner planning — not marketing)
+
+Zcash cannot enforce secondary royalties. **The mint is lifetime protocol
+revenue.** Numbers below are from `floor_price_epoch` × 128 seats × 32 epochs
+(`SUPPLY_CAP = 4096`). USD moves with ZEC; do not quote dollars as fixed.
+
+| Case | ZEC |
+|---|---|
+| Floor only (every mint pays exactly the epoch floor) | **55.552 ZEC** |
+| All max money (every mint pays floor × (1 + 12) = ×13) | **722.176 ZEC** |
+
+Anything between those bounds depends on how many people buy the money axis.
+Patience and work do not change payment — only score.
 
 ## Owner actions before launch (placeholders — do not invent values)
 
@@ -49,9 +64,10 @@ python sim.py all          # exit 0
 python web/test_vectors.py
 node web/test_vectors_js.mjs
 node web/test_page_security.mjs
+python zcash/test_publisher_snapshot.py
 ```
 
 Run the indexer self-test three times; the state digest must be identical.
-Current green digest (protocol freeze 494dfcc):
+Current green digest (`MAX_PATIENCE = 7`):
 
-`8610526427bb0463e04bee22ee40765e8b04affee66f042fb11d50d5ac905e86`
+`81508c848ed7511a5e018b5f7e47051ec260e72ac8b9e2329b25721343294635`

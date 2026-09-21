@@ -65,7 +65,7 @@ CONFIRMATION_DEPTH = 10
 # inside CHALLENGE_WINDOW (λ ≈ 3 expected hashes), not the 63% "expected"
 # figure. At 28+4 = 32 bits and 24×75s: ~7 MH/s. Provisional until a bench.
 MAX_WORK_BITS = 4
-MAX_PATIENCE = 16
+MAX_PATIENCE = 7         # 0–7 days; longer asks too much of this audience
 # Burn undefined on Zcash (burned_in→0). Cap at parse time so burn>0 never
 # becomes a paid "burn short" reject after the treasury payment lands.
 MAX_BURN = 0
@@ -934,7 +934,8 @@ def _selftest():
           "non-32-byte (secret, seed) splits cannot build a commitment")
 
     # 1. Two racers solve the same challenge and land in the same block.
-    a, b = new_bid(MAX_WORK_BITS, 8, money=4), new_bid(0, 0)
+    # High patience on `a` so seal_height+1 is still before unlock (unit=10).
+    a, b = new_bid(MAX_WORK_BITS, MAX_PATIENCE, money=4), new_bid(0, 0)
     chal = h - 1
     na = mine(v, chal, a["commitment"], a["tag"], a["work"])
     nb = mine(v, chal, b["commitment"], b["tag"], b["work"])
@@ -1079,8 +1080,8 @@ def _selftest():
                                 tag_witnesses=[b["tag"]])
     check(not ok, "inflated bid cannot open")
 
-    # patience-blocked case: a patience-16 bid is never stranded, just waits.
-    slow = new_bid(0, 16)
+    # patience-blocked case: a max-patience bid is never stranded, just waits.
+    slow = new_bid(0, MAX_PATIENCE)
     ns = mine(v, h - 1, slow["commitment"], slow["tag"], 0)
     feed(h, [tx_for(v, slow, ns, chal_h=h - 1)])
     slow_i, slow_h = v.minted - 1, h
@@ -1092,7 +1093,7 @@ def _selftest():
         need = EPOCH_SIZE - len(ep["members"])
         txs = []
         for _ in range(min(need, rng.randint(1, 12))):
-            s = new_bid(rng.randint(2, MAX_WORK_BITS), rng.randint(10, 16),
+            s = new_bid(rng.randint(2, MAX_WORK_BITS), rng.randint(4, MAX_PATIENCE),
                         0, rng.randint(2, MAX_MONEY))
             hc = h - rng.randint(1, 3)
             n = mine(v, hc, s["commitment"], s["tag"], s["work"])
@@ -1126,29 +1127,35 @@ def _selftest():
     t2 = trait_hash_of(slow["seed"], slow["secret"], s0c["score"], blake(b"another seal"))
     check(t1 != t2, "trait hash depends on the seal, which did not exist at commit time")
 
+    # Max patience waits MAX_PATIENCE units (patience_unit=10 in this vault).
+    unlock_slow = slow_h + MAX_PATIENCE * 10
     ok, reason = v.apply_reveal(slow_i, slow["secret"], slow["seed"], slow["salt"],
-                                0, 16, 0, 0, height=slow_h + 16 * 10 - 1,
+                                0, MAX_PATIENCE, 0, 0, height=unlock_slow - 1,
                                 tag_witnesses=[slow["tag"]])
-    check(reason == "patience not served", "patience 16 waits 16 units")
+    check(reason == "patience not served",
+          f"patience {MAX_PATIENCE} waits {MAX_PATIENCE} units")
     ok, reason = v.apply_reveal(slow_i, slow["secret"], slow["seed"], slow["salt"],
-                                0, 16, 0, 0, height=slow_h + 16 * 10,
+                                0, MAX_PATIENCE, 0, 0, height=unlock_slow,
                                 tag_witnesses=[slow["tag"]])
     check(ok, "...and then opens. No bid can be sealed forever")
 
     # 10. Flat base + live score floors.
+    # Maxing work+patience+money still yields the full 750k live ratio even
+    # after MAX_PATIENCE shrank — floors must stay pinned, not drift.
     check(floor_price_epoch(0) == floor_price_epoch(1) == 200_000, "epochs 0-1 floor")
     check(floor_price_epoch(2) == 500_000, "epoch 2 floor step")
     check(base_difficulty(0) == base_difficulty(3000) == BASE_DIFFICULTY_BITS,
           "base difficulty is flat at BASE_DIFFICULTY_BITS")
     live = max_live_score()
     floors = score_floors()
+    check(live == 750_000,
+          f"max_live_score stays 750_000 under MAX_PATIENCE={MAX_PATIENCE} (got {live})")
     check(tier_by_score(live) == 4,
           f"max live bid reaches tier_by_score 4 (live={live})")
     check(floors == tuple((live * p) // 1000 for p in _SCORE_FLOOR_PERMILLE),
           f"score floors derived from live maximum ({floors})")
     check(floors == (0, 150_000, 315_000, 480_000, 630_000),
           f"live floors are 150/315/480/630k under current caps ({floors})")
-
     # 11. End-to-end reveal READ FROM BLOCKS (not API).
     rv = mk_vault(seal_timeout=8, patience_unit=1)
     rh = prehistory(rv)

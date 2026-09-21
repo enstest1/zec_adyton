@@ -191,7 +191,7 @@ instead of SHA-256. On Zcash the buyer verifies in their client. A
 marketplace that checks proofs is a marketplace; one that does not is a
 Telegram group.
 
-Note the interaction with patience. A box committed to patience 16 cannot be
+Note the interaction with patience. A box committed to max patience cannot be
 opened for sixteen days, but can be *proven against* on day one. A locked box
 with a "visor is gold" proof on it is a new kind of asset: verifiable floor,
 provably cannot be opened yet. Nobody else in the meta can make one.
