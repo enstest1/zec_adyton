@@ -24,21 +24,26 @@ does not include a git hash you can `git checkout` yourself.
 
 ## Not ready (blocking launch)
 
-- **P0.3 testnet dry run** — no real node reached; see `TESTNET.md`. No mainnet
-  until that file has real mint/reveal txids.
+- **P0.3 testnet dry run** — see `TESTNET.md`. No mainnet until that file has
+  real mint/reveal txids.
 - **Owner constants** — `TREASURY` / `LAUNCH_HEIGHT` still placeholders.
   `python web/test_owner_constants.py` **fails on purpose** until both files
   share a real treasury (matching placeholders do not pass).
+
+## Keyfile (funds + openability)
+
+The downloadable keyfile warns that it protects **FUNDS** as well as
+openability. Losing it loses the mint, the ability to reveal, and anything
+left in the burner. Abandon-sweep and reveal return-address paths must work
+from the keyfile alone in a fresh session (see `web/js/tx/keyfile.js`).
 
 ## Deferred (explicit)
 
 - Burn mechanism — next version / next collection only; cannot activate mid-mint
 - On-chain transfer wire format / reveal-time ZRC-721 (see `MARKETPLACE.md`)
-- Browser broadcast / burner path (P1)
 - Selective-disclosure / threshold circuits as product claims
 - Memo receipt delivery path (no return UA in the mint record)
 - Royalties (none on Zcash; primary mint = lifetime revenue)
-- Custodial / in-wallet OP_RETURN broadcast (see DECISIONS.md)
 - (Blake2b in the browser is intentionally `@noble/hashes`, not WASM — decision)
 
 ## Revenue (owner planning — not marketing)

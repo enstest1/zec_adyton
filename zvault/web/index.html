@@ -62,9 +62,10 @@
     <div class="panel warn-box" id="keyfileWarn">
       KEYFILE REQUIRED BEFORE OP_RETURN IS SHOWN.
 
-      The keyfile holds secret, seed and salt. Without it this mint can never
-      be opened. There is no recovery path, by design. A clone site that asks
-      you to paste these into a form is stealing your mint.
+      This keyfile protects FUNDS as well as openability. Losing it loses the
+      mint, the ability to reveal, AND anything left in the burner. There is
+      no recovery path. A clone site that asks you to paste these into a form
+      is stealing your mint and your funds.
 
       Download the keyfile, store it offline, then the OP_RETURN hex appears.
     </div>
@@ -82,6 +83,11 @@
     <p id="fundingGate" class="fail hidden"></p>
     <p class="kv treasury-line"><span>pay to treasury</span><br /><b id="treasuryPay" class="treasury">—</b></p>
     <p class="kv"><span>valid through block</span> <b id="deadline">—</b></p>
+    <label>signed transaction hex (broadcast yourself — relay is optional)</label>
+    <div class="panel" id="signedHex">—</div>
+    <button type="button" id="btnCopySigned">copy signed hex</button>
+    <p class="banner">The relay is a convenience postbox only. Paste this hex into
+      any node <code>sendrawtransaction</code> if you prefer not to use our relay.</p>
     <label>copyable CLI notes (no custodial broadcast)</label>
     <div class="panel" id="cliCmd"></div>
     <button type="button" id="btnCopyCli">copy handoff</button>

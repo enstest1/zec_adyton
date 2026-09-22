@@ -266,14 +266,38 @@ skip). Fix the node, then let it catch up. Delete `vault.json` only when you
 intentionally want a full re-index from `LAUNCH_HEIGHT - CHALLENGE_WINDOW`.
 
 Serve the mint page from the same origin as `pub/` (see `web/README.md`).
-Real-node dry run: `TESTNET.md` (currently blocked until a node is available).
+Real-node dry run: `TESTNET.md`.
+
+## 6b. Broadcast relay (postbox only)
+
+```bash
+python zcash/relay.py --rpc-url http://127.0.0.1:8232 --bind 127.0.0.1:8091
+# POST http://127.0.0.1:8091/broadcast  {"hex":"<already-signed>"}
+```
+
+The relay calls `sendrawtransaction` and returns a txid. It has **no signing
+code path** — it never holds funds, never builds or modifies a transaction,
+and never sees a private key. Rate limit + hex size cap keep it from being a
+general broadcast service.
+
+**Convenience only.** The mint page shows the signed hex so a user can
+broadcast the same bytes themselves via any node. Do not treat the relay as
+required infrastructure.
 
 ## 7. Key safety
+
+The **keyfile** protects **FUNDS as well as openability**. Losing it loses
+the mint, the ability to reveal, and anything left in the burner. There is
+no recovery. Store offline; never paste into a web form.
+
+Abandon-sweep (funded but never minted) and reveal-with-return-address both
+recover from the keyfile alone in a fresh browser session — no tab state,
+no localStorage.
 
 The miner needs a funded wallet on a machine you do not own. Treat it as
 compromised from the start.
 
-- Fresh wallet, funded only with what the miner needs for the session.
+- Fresh wallet / burner, funded only with what the mint+reveal cycle needs.
 - Never the wallet holding the treasury or your own holdings.
 - Rotate after each rental.
 - If you use a third-party mining client, read its key handling first. A miner

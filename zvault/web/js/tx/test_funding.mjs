@@ -6,9 +6,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  FUNDING_BUFFER_ZAT,
   assertBurnerFunded,
-  formatZec,
   fundingAmount,
   fundingFromBid,
   payZatFromBid,
@@ -37,14 +35,17 @@ assert(payZatFromBid(200_000, 0) === 200_000);
 assert(payZatFromBid(200_000, 12) === 200_000 * 13);
 
 const f00 = fundingFromBid(200_000, 0);
-assert(f00.totalZat === 265_000, `epoch0 money0=${f00.totalZat}`);
-assert(fundingFromBid(200_000, 12).totalZat === 2_665_000, "money12");
-assert(fundingFromBid(2_000_000, 0).totalZat === 2_065_000, "epoch16 floor");
+assert(f00.totalZat === 265_000, `epoch 0 money 0=${f00.totalZat}`);
+assert(fundingFromBid(200_000, 12).totalZat === 2_665_000, "epoch 0 money 12");
+// Epoch 16+ floor is 2_000_000 at money 0 (MAX_MONEY is 12 — money=16 is unreachable).
+assert(
+  fundingFromBid(2_000_000, 0).totalZat === 2_065_000,
+  "epoch 16 floor, money 0"
+);
 
 assert(f00.totalZat !== fundingFromBid(500_000, 0).totalZat, "varies with floor");
 assert(f00.totalZat !== fundingFromBid(200_000, 12).totalZat, "varies with money");
 
-// Anti-hardcode: app.js must not embed 265000 as the funding total
 const appSrc = readFileSync(join(__dirname, "../app.js"), "utf8");
 assert(!/\b265_?000\b/.test(appSrc), "app.js must not hardcode 265000 funding");
 
@@ -57,6 +58,6 @@ throws(() => assertBurnerFunded(200_000, f), "underfunded");
 
 console.log(
   "T4/C1 funding OK —",
-  `epoch0/m0 ${f00.totalZat}; m12 ${fundingFromBid(200_000, 12).totalZat};`,
-  `epoch16 ${fundingFromBid(2_000_000, 0).totalZat}`
+  `epoch0/money0 ${f00.totalZat}; epoch0/money12 ${fundingFromBid(200_000, 12).totalZat};`,
+  `epoch16/money0 ${fundingFromBid(2_000_000, 0).totalZat}`
 );

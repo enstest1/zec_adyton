@@ -67,10 +67,26 @@ owner launch decision, not an implementation detail. See RUNBOOK.md.
 
 ## Recommended re-sequence (owner decision)
 
-**Agree: build P1.1 transparent builder/signer first, then use it for the
-testnet mint/reveal.** That validates NU5 sighash against a real chain and
-removes dependence on zcashd's dead wallet. Hold implementation until the
-owner confirms this report.
+**Done:** P1.1 T1–T8 path is in tree (sighash, fees, funding, plan, postbox
+relay, validate-before-value, keyfile funds warning). N3 needs a funded
+transparent burner + real `TREASURY` / `LAUNCH_HEIGHT` before txids land.
+
+## Testnet faucets (N3 — researched 2026-09-21)
+
+| Faucet | URL | Transparent `tm…`? | Notes |
+|---|---|---|---|
+| **jinolabs** (live 2026-09-22) | https://zcashfaucet.jinolabs.xyz/ | **Shielded drip** (0.1 TAZ) | `/api/status` OK — balance ~4493 TAZ, node ready; PoW-gated browser claim |
+| **Fauzec** | https://fauzec.com/ | **No** (roadmap) | UA / Sapling only; 1 TAZ / 24h |
+| **zecfaucet (legacy)** | various | historically yes | Many EOL with zcashd |
+
+**Working faucet recorded:** jinolabs (shielded). For our transparent burner,
+claim shielded TAZ then deshield to `tm…` in a wallet, or obtain a direct
+transparent send. Do not expect the faucet to fund the burner in one click.
+
+**Dust threshold (policy, not consensus):** code uses zcashd-style
+`3 * (300 * (34+148) / 1000) = 162` zat for P2PKH. **Confirm against live
+mempool** when broadcasting a near-dust change — if rejected, record the real
+number here.
 
 ## Real txids (fill when dry run completes)
 
@@ -79,7 +95,7 @@ owner confirms this report.
 | mint | _pending_ | |
 | indexer credit | _pending_ | |
 | epoch seal | _pending_ | |
-| reveal | _pending_ | |
+| reveal | _pending_ | change → return address |
 | PNG rendered | _pending_ | |
 
 ## RPC vs fixtures (live observations so far)
@@ -92,10 +108,13 @@ owner confirms this report.
 | OP_RETURN | `6a` + push in `scriptPubKey.hex` | Shape compatible; no ZVLT MAGIC on recent tip (expected) |
 | Transparent tags | P2PKH `76a914…88ac` | **Confirmed** on coinbase/outs |
 | Broadcast | n/a | `sendrawtransaction` exists; valid relay **TBD** |
+| Dust (P2PKH) | 162 zat | **unconfirmed on live mempool** |
 
 ## Owner unblock checklist
 
-1. Confirm P1.1-before-dry-run re-sequence (recommended: yes).
-2. Optional: Tatum API key / paid plan so publisher is not stuck at 5 rpm.
-3. Or stand up `ghcr.io/zcashfoundation/zebra` on testnet and point chain.py at it.
-4. After signer exists: mint → credit → seal → reveal → PNG; paste txids above.
+1. Set real testnet `TREASURY` + `LAUNCH_HEIGHT` (placeholders block honest dry run).
+2. Fund a transparent burner (one send) — see faucet table above.
+3. Optional: Tatum API key / paid plan so publisher is not stuck at 5 rpm.
+4. Or stand up `ghcr.io/zcashfoundation/zebra` on testnet.
+5. Mint → credit → seal → reveal (change to return addr) → PNG; paste txids above.
+6. Confirm dust threshold against a rejected/accepted near-dust change.

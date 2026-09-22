@@ -15,6 +15,7 @@ import {
   fundingAmount,
   fundingFromBid,
 } from "./tx/funding.js";
+import { buildKeyfile, KEYFILE_FUNDS_WARNING } from "./tx/keyfile.js";
 
 /** Burner UTXO balance in zatoshis once the signer is live; null until then. */
 let burnerBalanceZat = null;
@@ -206,7 +207,7 @@ async function mine() {
   const floor = table.floor_price_zat;
   const pay = floor * (1 + money);
 
-  keyfile = {
+  keyfile = buildKeyfile({
     commitment: bytesToHex(commitment),
     secret: bytesToHex(secret),
     seed: bytesToHex(seed),
@@ -220,8 +221,7 @@ async function mine() {
     pay_zat: pay,
     valid_through_height: lastOk,
     mined_at: Math.floor(Date.now() / 1000),
-    protocol: "zvault-v2",
-  };
+  });
   const funding = fundingFromBid(floor, money);
   minedRecord = {
     recordHex: bytesToHex(record),
@@ -240,7 +240,8 @@ async function mine() {
   $("keyfileWarn").classList.remove("hidden");
   $("btnSaveKey").disabled = false;
   $("recordPending").textContent =
-    "OP_RETURN hex is withheld until you download the keyfile. Lose the keyfile and this mint can never be opened — there is no recovery path.";
+    KEYFILE_FUNDS_WARNING +
+    " OP_RETURN hex is withheld until you download the keyfile.";
 }
 
 function downloadKeyfile() {
@@ -287,7 +288,13 @@ function downloadKeyfile() {
     `'{"data":"${minedRecord.recordHex}","${TREASURY}":${formatZec(minedRecord.payZat)}}'\n` +
     `# then fundrawtransaction + sign + sendrawtransaction\n` +
     `# amount = ${minedRecord.payZat} zat = ${formatZec(minedRecord.payZat)} ZEC`;
-  $("recordPending").textContent = "Keyfile saved. Back it up offline. Then broadcast.";
+  $("recordPending").textContent =
+    "Keyfile saved offline. It protects FUNDS and openability. Then fund (one send) and broadcast.";
+  // Signed hex filled by the signer once built; until then show placeholder.
+  if ($("signedHex") && $("signedHex").textContent === "—") {
+    $("signedHex").textContent =
+      "(signer will place already-signed mint hex here — copy and broadcast yourself, or use the postbox relay)";
+  }
 }
 
 /** Called by the burner/signer once UTXO balance is known (T5+). */
@@ -425,6 +432,7 @@ async function boot() {
   $("btnSaveKey").onclick = downloadKeyfile;
   $("btnCopyOp").onclick = () => copyText("opreturn");
   $("btnCopyCli").onclick = () => copyText("cliCmd");
+  if ($("btnCopySigned")) $("btnCopySigned").onclick = () => copyText("signedHex");
 
   $("keyfileInput").onchange = async (ev) => {
     const f = ev.target.files?.[0];
