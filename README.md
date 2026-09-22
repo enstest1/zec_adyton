@@ -31,6 +31,8 @@ cd zvault
 python verify.py && python sim.py all \
   && python web/test_vectors.py && node web/test_vectors_js.mjs \
   && node web/test_page_security.mjs \
+  && node web/test_no_bare_imports.mjs \
+  && node web/js/tx/run_tx_tests.mjs \
   && python zcash/test_publisher_snapshot.py \
   && python zcash/test_art_pipeline.py \
   && python web/test_owner_constants.py   # exits 1 until mainnet treasury is set

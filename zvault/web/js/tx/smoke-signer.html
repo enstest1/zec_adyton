@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>ZVAULT signer smoke</title>
+</head>
+<body>
+  <pre id="out">loading signer…</pre>
+  <script type="module">
+    // Browser-only smoke: relative imports through noble must resolve with no bundler.
+    const out = document.getElementById("out");
+    try {
+      const { generatePrivKey, privToPub, signSighashLowS, secp } = await import("./keys.js");
+      const priv = generatePrivKey();
+      const pub = privToPub(priv);
+      const msg = new Uint8Array(32).fill(9);
+      const sig = signSighashLowS(msg, priv);
+      const ok =
+        pub.length === 33 &&
+        sig.length === 64 &&
+        !secp.Signature.fromCompact(sig).hasHighS();
+      const line = ok
+        ? "SIGNER_SMOKE_OK pub=" + [...pub].slice(0, 4).map((b) => b.toString(16).padStart(2, "0")).join("")
+        : "SIGNER_SMOKE_FAIL unexpected lengths";
+      out.textContent = line;
+      console.log(line);
+    } catch (e) {
+      const line = "SIGNER_SMOKE_FAIL " + (e && e.message ? e.message : e);
+      out.textContent = line;
+      console.error(line, e);
+    }
+  </script>
+</body>
+</html>

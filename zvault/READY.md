@@ -84,6 +84,8 @@ python sim.py all
 python web/test_vectors.py
 node web/test_vectors_js.mjs
 node web/test_page_security.mjs
+node web/test_no_bare_imports.mjs   # no @noble / bare specs under js/
+node web/js/tx/run_tx_tests.mjs     # every js/tx/test_*.mjs; crash = fail
 python zcash/test_publisher_snapshot.py
 python zcash/test_art_pipeline.py       # mint→seal→reveal→PNG
 python web/test_owner_constants.py      # fails until owner sets TREASURY

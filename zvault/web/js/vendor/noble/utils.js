@@ -1,11 +1,7 @@
 /*! noble-hashes - MIT License (c) 2022 Paul Miller (paulmillr.com) */
-// We use WebCrypto aka globalThis.crypto, which exists in browsers and node.js 16+.
-// node.js versions earlier than v19 don't declare it in global scope.
-// For node.js, package.json#exports field mapping rewrites import
-// from `crypto` to `cryptoNode`, which imports native module.
-// Makes the utils un-importable in browsers without a bundler.
-// Once node.js 18 is deprecated (2025-04-30), we can just drop the import.
-import { crypto } from '@noble/hashes/crypto';
+// WebCrypto via relative crypto.js — no package.json exports rewrite, no node_modules.
+// Relative only — page has no bundler / node_modules (see test_no_bare_imports.mjs).
+import { crypto } from './crypto.js';
 import { bytes as abytes } from './_assert.js';
 // export { isBytes } from './_assert.js';
 // We can't reuse isBytes from _assert, because somehow this causes huge perf issues
