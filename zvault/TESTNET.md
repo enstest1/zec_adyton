@@ -86,16 +86,26 @@ Operator secrets for the dry-run burner/treasury live in
 
 ## Testnet faucets (N3 — researched 2026-09-21 / 22)
 
+**Hard prerequisite — read before starting the dry run:**
+
+There is **no public faucet that pays transparent `tm…` addresses today.**
+jinolabs and Fauzec both drip **shielded** TAZ only. The dry-run burner is
+transparent, so **deshield is mandatory**, not optional. That means **Zallet
+(or another wallet that can receive shielded testnet and send transparent)
+is a hard prerequisite** for the primary funding path. Do not begin the
+mint/reveal cycle until you can deshield into the burner `tm…`.
+
 | Faucet | URL | Transparent `tm…`? | Notes |
 |---|---|---|---|
-| **jinolabs** (live) | https://zcashfaucet.jinolabs.xyz/ | **Shielded drip** (0.1 TAZ) | `/api/status` OK; PoW-gated browser claim |
-| **Fauzec** | https://fauzec.com/ | **No** (roadmap) | UA / Sapling only; 1 TAZ / 24h |
+| **jinolabs** (live) | https://zcashfaucet.jinolabs.xyz/ | **No** — shielded only (0.1 TAZ) | `/api/status` OK; PoW-gated browser claim → then **Zallet deshield** |
+| **Fauzec** | https://fauzec.com/ | **No** — UA / Sapling only | Transparent on roadmap; do not wait on it |
 
 ### Faucet is an OPERATOR step, not a user requirement (X2)
 
 jinolabs sends **0.1 TAZ shielded**. Our burner is **transparent**, so the
-**operator** deshields once with **Zallet** (or equivalent) into the dry-run
-`tm…` burner before exercising mint/reveal.
+**operator** deshields once with **Zallet** into the dry-run `tm…` burner
+before exercising mint/reveal. Without Zallet (or equivalent), the P0.3 dry
+run cannot be funded via faucet.
 
 That does **not** change the product: end users still never need a wallet or
 a node — the page generates the burner, signs in-browser, and relays
@@ -158,23 +168,26 @@ If the RPC has no `getaddressutxos`, seed `progress.utxos` manually once:
 { "utxos": [{ "txidHex": "…", "vout": 0, "valueZat": 10000000 }] }
 ```
 
-## Alternative funding routes (if jinolabs/Zallet is painful)
+## Alternative funding routes (only if Zallet deshield is blocked)
 
-| Route | Transparent `tm…`? | Notes |
-|---|---|---|
-| **jinolabs** → Zallet deshield | After deshield | Primary path; faucet itself is shielded |
-| **Fauzec** (https://fauzec.com/) | **No today** | UA / Sapling only; transparent "on the roadmap" — do not wait on it |
-| **Ask the community** | Maybe | Post on [forum.zcashcommunity.com](https://forum.zcashcommunity.com/) (Apps / General) for a small testnet transparent send to your burner; historically people help with TAZ for builders |
-| Manual UTXO seed | Yes | Someone else sends TAZ to your `tm…`; put the outpoint in `progress.utxos` |
+Primary path remains: **jinolabs → Zallet deshield → fund burner**. Use an
+alternative only if you cannot run Zallet today.
 
-There is **no** currently reliable public faucet that pays transparent `tm…`
-directly. Treat deshield-or-community-send as the operator funding step.
+| Route | Transparent `tm…`? | Expected turnaround | Notes |
+|---|---|---|---|
+| **jinolabs → Zallet deshield** | After deshield | **Same session** (minutes once Zallet is installed and synced) | **Required primary path** |
+| **Fauzec** | **No** | n/a | UA / Sapling only — cannot fund the burner |
+| **Ask the community** | Maybe | **Hours to a few days** (forum reply cadence; not guaranteed) | Post on [forum.zcashcommunity.com](https://forum.zcashcommunity.com/) (Apps / General) asking for a small transparent testnet send to your `tm…`. Realistic if you can wait; do not plan the dry run around a same-day reply |
+| Manual UTXO seed | Yes | Depends on who sends | Someone else sends TAZ to your `tm…`; put the outpoint in `progress.utxos` |
+
+There is **no** public faucet that pays transparent `tm…` directly. Choose
+**Zallet same-session** vs **forum (hours–days, uncertain)** before you start.
 
 ## Owner unblock checklist
 
-1. **Operator:** claim jinolabs faucet → deshield with Zallet → fund burner
-   `tm…` in **one send** (≥ 265_000 zat for epoch-0 money-0). Or use an
-   alternative funding route above.
+1. **Install Zallet (hard prereq).** Claim jinolabs faucet → deshield → fund
+   burner `tm…` in **one send** (≥ 265_000 zat for epoch-0 money-0). Or wait
+   on a forum transparent send (hours–days, not guaranteed).
 2. Run `node web/js/tx/cycle.mjs --keyfile …` (re-run until complete); paste txids.
 3. Confirm dust threshold against a rejected/accepted near-dust change.
 4. Optional: Tatum API key / paid plan so publisher is not stuck at 5 rpm —

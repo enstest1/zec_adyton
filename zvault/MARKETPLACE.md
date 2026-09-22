@@ -200,10 +200,12 @@ as an operational fact — only as a documented digest algorithm that our
 vectors pass. Wallet and marketplace tooling still have to implement the
 flags correctly.
 
-**Conclusion (downgraded):** Trustless partial-sign flows are **not blocked
-by missing sighash flag definitions** in ZIP 244. **Live acceptance of
-`SIGHASH_SINGLE|ANYONECANPAY` spends remains unverified** pending a testnet
-broadcast txid.
+**Conclusion (downgraded):** ZIP 244 **defines** `SIGHASH_SINGLE|ANYONECANPAY`
+(`0x83`) and our vectors match that digest construction. That is **not** the
+same as "PSBT-style buyer-completes works on live Zcash v5." **Live mempool
+acceptance of `0x83` spends is unverified** until a testnet txid is recorded
+in `TESTNET.md`. Do not build a launch or marketplace recommendation on the
+unverified half.
 
 ---
 
@@ -224,9 +226,10 @@ hint; you inherit indexer fragmentation and inscription-wallet footguns
 **Gain:** Settlement fee = only realistic **recurring** revenue (Zcash cannot
 enforce royalties). Full control of sealed + revealed UX.
 
-**Cost:** Larger product than the mint; you become the liquidity venue and,
-unless pure PSBT, the trust surface. Competing with sites that already speak
-ZRC-721.
+**Cost:** Larger product than the mint; you become the liquidity venue and
+the trust surface. Competing with sites that already speak ZRC-721.
+**Do not** plan (b) around `SIGHASH_SINGLE|ANYONECANPAY` / partial-sign
+offers until a live `0x83` txid exists — that path is digest-verified only.
 
 ### (c) Ship v1 as-is (no transfers) — current READY posture
 
@@ -238,6 +241,10 @@ story has no exit liquidity until a later decision.
 
 ### Recommendation (research stance, not a commit)
 
+Recommendations below rest only on **verified** facts (published ZRC-721
+text, ZVAULT ownership = minting address, no v1 transfer). They do **not**
+assume live partial-sign / `0x83` mempool acceptance.
+
 1. **Do not pretend ZVAULT mints are ZRC-721 today** — they are not; listing
    will fail silently on those indexers.
 2. **Do not block v1 launch on marketplace conformance** — the published
@@ -246,6 +253,8 @@ story has no exit liquidity until a later decision.
 3. If secondary liquidity is a near-term goal after mint: prefer **(a) emit
    ZRC-721 at reveal** (mint game stays ZVAULT; tradeable object is standard)
    over building (b) first — unless the settlement fee thesis is the business.
+   Treat zebra.family-style partially signed offers as a **later** option after
+   a live `0x83` proof, not as a reason to choose (b) now.
 4. Keep **(c) for the immediate launch** if the only remaining blockers are
    owner constants; revisit (a) as an explicit version once reveal UX is real.
 
