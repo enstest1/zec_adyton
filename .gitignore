@@ -23,3 +23,7 @@ zvault/web/js/_blake.js
 zvault/web/js/crypto.js
 zvault/web/js/cryptoNode.js
 zvault/web/js/utils.js
+.dryrun-keys.json
+zvault/.dryrun-keys.json
+**/.dryrun-keys.json
+zvault/web/js/tx/_ref_transaction.py

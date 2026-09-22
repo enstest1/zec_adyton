@@ -7,7 +7,7 @@ import {
   MAX_WORK_BITS, MAX_PATIENCE, MAX_MONEY, CHALLENGE_WINDOW,
 } from "./protocol.js";
 import { checkVectors } from "./check-vectors.js";
-import { TREASURY } from "./config.js";
+import { TREASURY, PAGE_NETWORK, assertTreasuryForNetwork } from "./config.js";
 import { resolveTableStateUrls } from "./pub-urls.js";
 import {
   assertBurnerFunded,
@@ -389,10 +389,11 @@ async function watchMyPunk(index) {
 }
 
 async function boot() {
+  assertTreasuryForNetwork(TREASURY, PAGE_NETWORK);
   $("trust").textContent =
     "This page is static. After load it only fetches same-origin table.json / state.json. " +
     "Secrets, seeds and salts are created with crypto.getRandomValues and never uploaded. " +
-    "Treasury address is hardcoded in the page source — never taken from those JSON files.";
+    `Treasury is network-scoped (${PAGE_NETWORK}) in the page source — never taken from those JSON files.`;
   $("treasuryBid").textContent = TREASURY;
 
   if (window.__pubUrlError) {

@@ -35,7 +35,18 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import indexer as ix
 
 MAGIC = ix.MAGIC
+# Live paths must pass network from getblockchaininfo; default alias is mainnet.
 TREASURY = ix.TREASURY
+LAUNCH_HEIGHT = ix.LAUNCH_HEIGHT
+
+
+def treasury_for_node(node: "Node") -> str:
+    """Pick treasury from the node-reported chain (never mix test↔main)."""
+    info = node.call("getblockchaininfo")
+    chain = info.get("chain")
+    treasury, _ = ix.constants_for_network(chain)
+    ix.assert_treasury_matches_network(treasury, chain)
+    return treasury
 
 
 class Node:
@@ -231,8 +242,9 @@ def main():
     a = ap.parse_args()
     node = Node(a.url, a.user, a.password, a.cookie)
     if getattr(a, "start", None) is None and a.cmd in ("scan", "watch"):
-        import indexer as ix
-        a.start = ix.LAUNCH_HEIGHT - ix.CHALLENGE_WINDOW
+        info = node.call("getblockchaininfo")
+        _, launch = ix.constants_for_network(info["chain"])
+        a.start = launch - ix.CHALLENGE_WINDOW
 
     if a.cmd == "probe":
         try:
@@ -245,6 +257,11 @@ def main():
         print(f"  chain   {info.get('chain')}")
         print(f"  height  {info.get('blocks')}")
         print(f"  synced  {info.get('verificationprogress', 'n/a')}")
+        try:
+            treas = treasury_for_node(node)
+            print(f"  treasury for chain: {treas}")
+        except Exception as e:
+            print(f"  treasury select: {e}")
         return
 
     if a.cmd == "scan":

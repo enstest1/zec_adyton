@@ -67,21 +67,44 @@ owner launch decision, not an implementation detail. See RUNBOOK.md.
 
 ## Recommended re-sequence (owner decision)
 
-**Done:** P1.1 T1–T8 path is in tree (sighash, fees, funding, plan, postbox
-relay, validate-before-value, keyfile funds warning). N3 needs a funded
-transparent burner + real `TREASURY` / `LAUNCH_HEIGHT` before txids land.
+**Done:** P1.1 T1–T8 + ECDSA burner/builder (S1–S5). Network-scoped
+`TREASURY_*` / `LAUNCH_HEIGHT_*` (X1). N3 waits on **operator deshield** of
+faucet TAZ into the transparent burner (X2 — not a user requirement).
 
-## Testnet faucets (N3 — researched 2026-09-21)
+### Testnet constants (live-validated 2026-09-22)
+
+| Constant | Value |
+|---|---|
+| `TREASURY_TESTNET` | `tmBsjJiZN4MJMPirvpRb6r53MrJTAZ9Fur7` |
+| `LAUNCH_HEIGHT_TESTNET` | `4377000` |
+| Node `validateaddress` (treasury) | **isvalid: true** (Tatum zebrad) |
+| Node `validateaddress` (burner sample) | **isvalid: true** |
+| Mainnet treasury | still placeholder — owner-constants gate **fails** (armed) |
+
+Operator secrets for the dry-run burner/treasury live in
+`zvault/.dryrun-keys.json` (**gitignored**).
+
+## Testnet faucets (N3 — researched 2026-09-21 / 22)
 
 | Faucet | URL | Transparent `tm…`? | Notes |
 |---|---|---|---|
-| **jinolabs** (live 2026-09-22) | https://zcashfaucet.jinolabs.xyz/ | **Shielded drip** (0.1 TAZ) | `/api/status` OK — balance ~4493 TAZ, node ready; PoW-gated browser claim |
+| **jinolabs** (live) | https://zcashfaucet.jinolabs.xyz/ | **Shielded drip** (0.1 TAZ) | `/api/status` OK; PoW-gated browser claim |
 | **Fauzec** | https://fauzec.com/ | **No** (roadmap) | UA / Sapling only; 1 TAZ / 24h |
-| **zecfaucet (legacy)** | various | historically yes | Many EOL with zcashd |
 
-**Working faucet recorded:** jinolabs (shielded). For our transparent burner,
-claim shielded TAZ then deshield to `tm…` in a wallet, or obtain a direct
-transparent send. Do not expect the faucet to fund the burner in one click.
+### Faucet is an OPERATOR step, not a user requirement (X2)
+
+jinolabs sends **0.1 TAZ shielded**. Our burner is **transparent**, so the
+**operator** deshields once with **Zallet** (or equivalent) into the dry-run
+`tm…` burner before exercising mint/reveal.
+
+That does **not** change the product: end users still never need a wallet or
+a node — the page generates the burner, signs in-browser, and relays
+already-signed bytes. Deshielding faucet TAZ is only how the *operator*
+funds the P0.3 dry run. Do not read a shielded faucet as a failure of the
+burner design.
+
+0.1 TAZ = **10,000,000 zat** ≈ **37** funded epoch-0 / money-0 mints at the
+265,000 zat funding figure.
 
 **Dust threshold (policy, not consensus):** code uses zcashd-style
 `3 * (300 * (34+148) / 1000) = 162` zat for P2PKH. **Confirm against live
@@ -112,9 +135,9 @@ number here.
 
 ## Owner unblock checklist
 
-1. Set real testnet `TREASURY` + `LAUNCH_HEIGHT` (placeholders block honest dry run).
-2. Fund a transparent burner (one send) — see faucet table above.
-3. Optional: Tatum API key / paid plan so publisher is not stuck at 5 rpm.
-4. Or stand up `ghcr.io/zcashfoundation/zebra` on testnet.
-5. Mint → credit → seal → reveal (change to return addr) → PNG; paste txids above.
-6. Confirm dust threshold against a rejected/accepted near-dust change.
+1. **Operator:** claim jinolabs faucet → deshield with Zallet → fund burner
+   `tm…` in **one send** (≥ 265_000 zat for epoch-0 money-0).
+2. Run mint → credit → seal → reveal (change to return addr) → PNG; paste txids.
+3. Confirm dust threshold against a rejected/accepted near-dust change.
+4. Optional: Tatum API key / paid plan so publisher is not stuck at 5 rpm.
+5. Before mainnet: set `TREASURY_MAINNET` + `LAUNCH_HEIGHT_MAINNET` (gate armed).

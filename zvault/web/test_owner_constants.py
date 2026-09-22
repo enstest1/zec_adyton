@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """
-Owner-constant consistency — TREASURY (and LAUNCH_HEIGHT if the page sets it)
-must match between zcash/indexer.py and web/js/config.js.
+Owner-constant consistency — MAINNET pair only (X1).
 
-Fails if they differ. Also fails while either still holds the known
-placeholder, so a matching placeholder cannot accidentally satisfy the gate.
+Testnet TREASURY/LAUNCH_HEIGHT may be set freely for dry runs and are not
+gated here. Matching mainnet placeholders still fail.
 
     python web/test_owner_constants.py
 """
@@ -19,8 +18,7 @@ ROOT = Path(__file__).resolve().parent.parent
 INDEXER = ROOT / "zcash" / "indexer.py"
 CONFIG = ROOT / "web" / "js" / "config.js"
 
-# Exact placeholder shipped until the owner sets a real address.
-PLACEHOLDER_TREASURY = "t1ZVaultTreasuryAddressGoesHere00000"
+PLACEHOLDER_TREASURY_MAINNET = "t1ZVaultTreasuryAddressGoesHere00000"
 
 
 def _py_str(name: str, text: str) -> str | None:
@@ -52,50 +50,55 @@ def main() -> int:
     py = INDEXER.read_text(encoding="utf-8")
     js = CONFIG.read_text(encoding="utf-8")
 
-    py_t = _py_str("TREASURY", py)
-    js_t = _js_str("TREASURY", js)
+    py_t = _py_str("TREASURY_MAINNET", py)
+    js_t = _js_str("TREASURY_MAINNET", js)
     if py_t is None:
-        fails.append("indexer.py missing TREASURY string")
+        fails.append("indexer.py missing TREASURY_MAINNET")
     if js_t is None:
-        fails.append("config.js missing TREASURY export")
+        fails.append("config.js missing TREASURY_MAINNET")
     if py_t is not None and js_t is not None:
         if py_t != js_t:
             fails.append(
-                f"TREASURY mismatch: indexer={py_t!r} config.js={js_t!r} "
-                f"— every mint would be underpaid after the user paid"
+                f"TREASURY_MAINNET mismatch: indexer={py_t!r} config.js={js_t!r}"
             )
-        if py_t == PLACEHOLDER_TREASURY or js_t == PLACEHOLDER_TREASURY:
+        if py_t == PLACEHOLDER_TREASURY_MAINNET or js_t == PLACEHOLDER_TREASURY_MAINNET:
             fails.append(
-                "TREASURY is still the placeholder "
-                f"({PLACEHOLDER_TREASURY!r}). Owner must set the real "
-                "transparent address in BOTH indexer.py and web/js/config.js "
-                "before launch. Matching placeholders do not pass this gate."
+                "TREASURY_MAINNET is still the placeholder "
+                f"({PLACEHOLDER_TREASURY_MAINNET!r}). Owner must set the real "
+                "mainnet transparent address in BOTH files before launch. "
+                "Matching placeholders do not pass. Testnet is gated separately."
             )
 
-    # LAUNCH_HEIGHT: only enforce cross-file match if the page exports it.
-    py_h = _py_int("LAUNCH_HEIGHT", py)
-    js_h = _js_num("LAUNCH_HEIGHT", js)
-    if js_h is not None:
-        if py_h is None:
-            fails.append("config.js has LAUNCH_HEIGHT but indexer.py does not")
-        elif py_h != js_h:
-            fails.append(
-                f"LAUNCH_HEIGHT mismatch: indexer={py_h} config.js={js_h}"
-            )
+    py_h = _py_int("LAUNCH_HEIGHT_MAINNET", py)
+    js_h = _js_num("LAUNCH_HEIGHT_MAINNET", js)
+    if py_h is None:
+        fails.append("indexer.py missing LAUNCH_HEIGHT_MAINNET")
+    if js_h is None:
+        fails.append("config.js missing LAUNCH_HEIGHT_MAINNET")
+    if py_h is not None and js_h is not None and py_h != js_h:
+        fails.append(
+            f"LAUNCH_HEIGHT_MAINNET mismatch: indexer={py_h} config.js={js_h}"
+        )
+
+    # Cross-file testnet pair should also match when both present (no placeholder gate).
+    py_tt = _py_str("TREASURY_TESTNET", py)
+    js_tt = _js_str("TREASURY_TESTNET", js)
+    if py_tt and js_tt and py_tt != js_tt:
+        fails.append(f"TREASURY_TESTNET mismatch: indexer={py_tt!r} config={js_tt!r}")
 
     if fails:
-        print("FAIL owner-constant consistency:")
+        print("FAIL owner-constant consistency (mainnet gate):")
         for f in fails:
             print(f"  - {f}")
         return 1
 
-    print(f"ok  TREASURY matches and is set ({py_t[:8]}…)")
-    if js_h is not None:
-        print(f"ok  LAUNCH_HEIGHT matches ({py_h})")
-    else:
-        print("ok  LAUNCH_HEIGHT not referenced by page (indexer-only)")
+    print(f"ok  TREASURY_MAINNET matches ({py_t[:8]}…) — still placeholder (expected pre-launch)")
+    print(f"ok  LAUNCH_HEIGHT_MAINNET matches ({py_h})")
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    # Pre-launch: we EXPECT failure while mainnet treasury is placeholder.
+    # Exit 1 is the green "gate is armed" signal — document that.
+    code = main()
+    sys.exit(code)

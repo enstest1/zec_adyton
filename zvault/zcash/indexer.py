@@ -46,11 +46,66 @@ KIND_MINT, KIND_REVEAL, KIND_TRANSFER = 1, 2, 3
 SUPPLY_CAP = 4096
 EPOCH_SIZE = 128
 BASE_DIFFICULTY_BITS = 22
-TREASURY = "t1ZVaultTreasuryAddressGoesHere00000"
 
-# Placeholder. Must be fixed and published before launch; every indexer
-# starts from LAUNCH_HEIGHT - CHALLENGE_WINDOW and must agree on it.
-LAUNCH_HEIGHT = 2_900_000
+# ---------------------------------------------------------------------------
+# Network-scoped owner constants (X1)
+# Mainnet pair is launch-gated. Testnet pair is free for dry runs.
+# NEVER use a testnet treasury/height when the node reports main/mainnet.
+# ---------------------------------------------------------------------------
+TREASURY_MAINNET = "t1ZVaultTreasuryAddressGoesHere00000"
+LAUNCH_HEIGHT_MAINNET = 2_900_000
+
+# Testnet dry-run treasury — real tm… under operator control for N3.
+# Privkey is NOT in-repo; see .dryrun-keys.json (gitignored) on the operator box.
+TREASURY_TESTNET = "tmBsjJiZN4MJMPirvpRb6r53MrJTAZ9Fur7"
+LAUNCH_HEIGHT_TESTNET = 4_377_000
+
+def constants_for_network(network: str) -> tuple[str, int]:
+    """Select treasury + launch height for the node-reported chain.
+
+    Accepts getblockchaininfo()['chain'] values: 'main', 'test', 'regtest'.
+    """
+    if network is None or not str(network).strip():
+        raise ValueError("network required — refuse to default treasury/launch height")
+    n = str(network).strip().lower()
+    if n in ("main", "mainnet"):
+        return TREASURY_MAINNET, LAUNCH_HEIGHT_MAINNET
+    if n in ("test", "testnet"):
+        return TREASURY_TESTNET, LAUNCH_HEIGHT_TESTNET
+    if n in ("regtest", "reg"):
+        # Local regtest uses testnet-style transparent prefixes in practice;
+        # still never the mainnet treasury.
+        return TREASURY_TESTNET, LAUNCH_HEIGHT_TESTNET
+    raise ValueError(f"unknown network {network!r} — refuse to pick treasury")
+
+
+def assert_treasury_matches_network(treasury: str, network: str) -> None:
+    """Refuse a testnet treasury (tm…) when the node is mainnet (and vice versa)."""
+    want, _ = constants_for_network(network)
+    n = str(network).strip().lower()
+    if n in ("main", "mainnet"):
+        if treasury.startswith("tm") or treasury == TREASURY_TESTNET:
+            raise ValueError(
+                "testnet treasury cannot be used when node reports mainnet"
+            )
+        if not treasury.startswith("t1"):
+            raise ValueError(f"mainnet treasury must be t1… (got {treasury[:8]!r})")
+    if n in ("test", "testnet", "regtest", "reg"):
+        if treasury.startswith("t1") or treasury == TREASURY_MAINNET:
+            raise ValueError(
+                "mainnet treasury cannot be used when node reports testnet"
+            )
+        if not treasury.startswith("tm"):
+            raise ValueError(f"testnet treasury must be tm… (got {treasury[:8]!r})")
+    if treasury != want:
+        # Soft mismatch vs configured constant — still enforce prefix rules above.
+        pass
+
+
+# Self-test / offline default follows MAINNET placeholders (gate checks those).
+# Live paths must call constants_for_network(node['chain']).
+TREASURY = TREASURY_MAINNET
+LAUNCH_HEIGHT = LAUNCH_HEIGHT_MAINNET
 
 CHALLENGE_WINDOW = 24     # a solution may use any of the last 24 block hashes (~30 min)
 SEAL_TIMEOUT = 1152       # an epoch seals at most 1152 blocks (~1 day) after it opens

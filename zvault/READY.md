@@ -26,9 +26,9 @@ does not include a git hash you can `git checkout` yourself.
 
 - **P0.3 testnet dry run** — see `TESTNET.md`. No mainnet until that file has
   real mint/reveal txids.
-- **Owner constants** — `TREASURY` / `LAUNCH_HEIGHT` still placeholders.
-  `python web/test_owner_constants.py` **fails on purpose** until both files
-  share a real treasury (matching placeholders do not pass).
+- **Owner constants (mainnet)** — `TREASURY_MAINNET` / `LAUNCH_HEIGHT_MAINNET`
+  still placeholders. `python web/test_owner_constants.py` **fails on purpose**
+  until the mainnet pair is set. Testnet pair is separate and live for dry runs.
 
 ## Keyfile (funds + openability)
 
