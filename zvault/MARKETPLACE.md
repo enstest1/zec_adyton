@@ -175,6 +175,8 @@ happens after seal (and especially after reveal).
 
 ### Sighash / atomic PSBT-style swaps (load-bearing)
 
+**Status (2026-09-22): DIGEST VERIFIED, MEMPOOL UNVERIFIED.**
+
 Verified against **ZIP 244** (Final; NU5+ v5 transparent sighash) and
 **ZIP 243** (Sapling-era):
 
@@ -183,16 +185,25 @@ Verified against **ZIP 244** (Final; NU5+ v5 transparent sighash) and
   script flags: https://zips.z.cash/zip-0244
 - ZIP 244 **reuses** those encodings and documents ANYONECANPAY / SINGLE
   digest construction for transparent inputs.
+- Our JS implementation matches the official `zcash-test-vectors` zip_0244
+  cases for `sighash_single_anyone` (digest only) — see
+  `web/js/tx/test_zip244.mjs`.
 - Important Zcash-specific tightening: for v5, `SIGHASH_SINGLE` **without a
   corresponding transparent output at the same index must fail validation**
   (not silently hash empty outputs). See ZIP 244 and Zebra advisory
   GHSA-pvmv-cwg8-v6c8.
 
-**Conclusion:** Trustless partial-sign / buyer-completes flows are **not
-blocked by missing sighash flags** on modern (v5) transparent inputs. Wallet
-and marketplace tooling still have to implement them correctly (zebra.family
-already markets partially signed offers). Do not assume every light wallet
-exposes these flags in UX.
+**Not yet proven on a live mempool:** broadcasting a real funded transaction
+signed with `0x83` and recording a txid. Until that txid exists in
+`TESTNET.md`, do **not** treat "PSBT-style buyer-completes works on Zcash v5"
+as an operational fact — only as a documented digest algorithm that our
+vectors pass. Wallet and marketplace tooling still have to implement the
+flags correctly.
+
+**Conclusion (downgraded):** Trustless partial-sign flows are **not blocked
+by missing sighash flag definitions** in ZIP 244. **Live acceptance of
+`SIGHASH_SINGLE|ANYONECANPAY` spends remains unverified** pending a testnet
+broadcast txid.
 
 ---
 

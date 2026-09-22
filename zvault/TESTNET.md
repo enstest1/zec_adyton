@@ -133,11 +133,50 @@ number here.
 | Broadcast | n/a | `sendrawtransaction` exists; valid relay **TBD** |
 | Dust (P2PKH) | 162 zat | **unconfirmed on live mempool** |
 
+## One-command cycle (R1 — operator)
+
+After the burner is funded and the keyfile has a mined solution +
+`reveal_return_address`:
+
+```bash
+cd zvault
+# Publisher must be running against the same pub/ dir (see DEPLOY.md).
+node web/js/tx/cycle.mjs --keyfile /path/to/zvault-keys.json \
+  --rpc "$ZCASH_RPC_URL" \
+  [--relay http://127.0.0.1:8091]
+```
+
+Progress lands in `web/pub/dryrun-progress.json`. Re-run the same command after
+any failure — completed steps (`funded`, `mint_broadcast`, `mint_credited`,
+`epoch_sealed`, `reveal_broadcast`, `reveal_indexed`, `collection`) are skipped.
+Exit codes 10–15 mean "WAIT" (operator/publisher action), not a hard crash.
+Paste printed txids into the table above when the cycle finishes.
+
+If the RPC has no `getaddressutxos`, seed `progress.utxos` manually once:
+
+```json
+{ "utxos": [{ "txidHex": "…", "vout": 0, "valueZat": 10000000 }] }
+```
+
+## Alternative funding routes (if jinolabs/Zallet is painful)
+
+| Route | Transparent `tm…`? | Notes |
+|---|---|---|
+| **jinolabs** → Zallet deshield | After deshield | Primary path; faucet itself is shielded |
+| **Fauzec** (https://fauzec.com/) | **No today** | UA / Sapling only; transparent "on the roadmap" — do not wait on it |
+| **Ask the community** | Maybe | Post on [forum.zcashcommunity.com](https://forum.zcashcommunity.com/) (Apps / General) for a small testnet transparent send to your burner; historically people help with TAZ for builders |
+| Manual UTXO seed | Yes | Someone else sends TAZ to your `tm…`; put the outpoint in `progress.utxos` |
+
+There is **no** currently reliable public faucet that pays transparent `tm…`
+directly. Treat deshield-or-community-send as the operator funding step.
+
 ## Owner unblock checklist
 
 1. **Operator:** claim jinolabs faucet → deshield with Zallet → fund burner
-   `tm…` in **one send** (≥ 265_000 zat for epoch-0 money-0).
-2. Run mint → credit → seal → reveal (change to return addr) → PNG; paste txids.
+   `tm…` in **one send** (≥ 265_000 zat for epoch-0 money-0). Or use an
+   alternative funding route above.
+2. Run `node web/js/tx/cycle.mjs --keyfile …` (re-run until complete); paste txids.
 3. Confirm dust threshold against a rejected/accepted near-dust change.
-4. Optional: Tatum API key / paid plan so publisher is not stuck at 5 rpm.
+4. Optional: Tatum API key / paid plan so publisher is not stuck at 5 rpm —
+   **recommendation: self-hosted Zebra for production** (see `DEPLOY.md`).
 5. Before mainnet: set `TREASURY_MAINNET` + `LAUNCH_HEIGHT_MAINNET` (gate armed).

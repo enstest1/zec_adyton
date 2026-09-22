@@ -1,3 +1,5 @@
+// ALTERNATIVE NOT TAKEN (2026-09-22) — see evm/README.md.
+// ZVAULT v1 ships on Zcash (transparent OP_RETURN + indexer), not EVM.
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 

@@ -1,5 +1,16 @@
 # GAME — making it a game, not a spreadsheet
 
+> **SUPERSEDED (2026-09-22).** This document argued the v1→v2 redesign and the
+> "poker not chess" framing. Much of that redesign **shipped** (commitment-bound
+> PoW, block-hash challenges, epoch seal + rank tiers, seal-bound traits). What
+> did **not** ship as a solvable strategic table: burn is inactive (`MAX_BURN=0`)
+> and work is capped (`MAX_WORK_BITS=4`), so live score maxes at 750k and **tier
+> is largely rank + seal lottery** within an epoch — not a grindable spreadsheet
+> of pure strategy. Do not quote this file as launch copy promising a deep
+> multi-axis game at the table. Current truth: `zcash/SPEC.md`, `READY.md`,
+> `LAUNCH.md` (accuracy notes). Historical arguments below are preserved for
+> context.
+
 Outside review. Read after `DECIDE.md`, before touching weights or the wire
 format. Everything claimed here is reproduced by `python3 sim.py all`, which
 imports the real `score_of` and the real `derive` so it cannot drift from the

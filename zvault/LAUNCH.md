@@ -131,6 +131,22 @@ circuit exists.
 Ownership is the minting address. No secondary market and no floor until
 transfers ship. Say so plainly — that is the honesty-about-trust positioning.
 
+---
+
+## Where do I trade this? (P1.2 — plain answer)
+
+**You don't, in v1.** There is no secondary market. Ownership is the **minting
+address** tracked by the open-source indexer — not a transferable on-chain NFT
+token. You cannot list it on Zilkroad / zebra.family / anywhere else as a
+standard asset today.
+
+**First post-launch project:** reveal-time **ZRC-721** conformance (dual-write
+or mint-at-reveal) so existing Zcash marketplaces can see a tradeable object.
+Until that ships, do not improvise marketplace claims. Details:
+`MARKETPLACE.md`.
+
+---
+
 **Patience 0–7 days — in the thread (tweet 3), not only the notes.** Pick 0 =
 open as soon as the epoch seals. Max commitment is seven days.
 
@@ -150,3 +166,11 @@ receipts until that is designed — keyfile backup is the launch path.
 by an open-source indexer anyone can run and verify — not by a smart contract.
 Zcash has no VM. Here's the code." The projects that skip this line are the
 ones with a bad week coming.
+
+**Tweets 3 / 6 / 7 — strategic depth is limited at launch.** Work is capped
+(`MAX_WORK_BITS = 4`; the page auto-maxes) and burn is inactive (`MAX_BURN = 0`).
+Live score maxes at 750k. Within an epoch, **tier is largely rank + seal
+lottery**, not a deep multi-axis grind. Do **not** promise a fully solvable
+strategic table in launch copy. "Poker not chess" still works as "no single
+correct bid" — it must **not** read as "master the spreadsheet and you win."
+`GAME.md` is superseded on this point (header dated 2026-09-22).

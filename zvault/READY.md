@@ -25,7 +25,8 @@ does not include a git hash you can `git checkout` yourself.
 ## Not ready (blocking launch)
 
 - **P0.3 testnet dry run** — see `TESTNET.md`. No mainnet until that file has
-  real mint/reveal txids.
+  real mint/reveal txids. Operator cycle:
+  `node web/js/tx/cycle.mjs --keyfile …` (idempotent). Topology: `DEPLOY.md`.
 - **Owner constants (mainnet)** — `TREASURY_MAINNET` / `LAUNCH_HEIGHT_MAINNET`
   still placeholders. `python web/test_owner_constants.py` **fails on purpose**
   until the mainnet pair is set. Testnet pair is separate and live for dry runs.

@@ -1,3 +1,4 @@
+// ALTERNATIVE NOT TAKEN (2026-09-22) — see evm/README.md. Not part of ZVAULT v1.
 pragma circom 2.1.6;
 
 include "circomlib/circuits/poseidon.circom";

@@ -1,5 +1,11 @@
 # fable-overview — what was reviewed, what was changed, and what I actually think
 
+> **SUPERSEDED (2026-09-22).** Written 2026-09-17 as a companion to `GAME.md`
+> during the v2 redesign. The EVM track it mentions was **not taken**; burn
+> remains inactive; launch copy must not promise a fully solvable strategic
+> table. Prefer `READY.md`, `SPEC.md`, and `LAUNCH.md` accuracy notes. Kept
+> for session history only.
+
 Written 2026-09-17 by Claude Fable 5.1 at Josh's request, after a full read of
 the repo. This is the plain-language companion to `GAME.md`. Where that doc
 argues the design, this one accounts for the work: what was touched, what was
