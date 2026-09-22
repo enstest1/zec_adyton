@@ -44,6 +44,12 @@
     </div>
   </div>
   <p class="kv"><span>score</span> <b id="score">—</b> · <span>pay</span> <b id="pay">—</b></p>
+  <p class="banner warn-box" id="oneSendWarn">
+    Fund the burner in <b>one send</b>. Multiple deposits (e.g. several exchange
+    withdrawals) add inputs and raise the ZIP 317 fee — your budget can be exceeded
+    silently. Send exactly the amount below, once.
+  </p>
+  <p class="kv"><span>send to burner (ONE number — mint + fees + reveal + buffer)</span><br /><b id="fundingNeed">—</b></p>
   <p class="kv treasury-line"><span>treasury (hardcoded — compare to repo / launch thread)</span><br /><b id="treasuryBid" class="treasury">—</b></p>
   <p id="proj" class="banner"></p>
 
@@ -71,7 +77,9 @@
     <label>OP_RETURN (74-byte hex)</label>
     <div class="panel" id="opreturn"></div>
     <button type="button" id="btnCopyOp">copy OP_RETURN</button>
-    <p class="kv"><span>exact payment</span> <b id="payExact">—</b></p>
+    <p class="kv"><span>exact treasury payment</span> <b id="payExact">—</b></p>
+    <p class="kv"><span>fund burner with</span> <b id="fundingExact">—</b></p>
+    <p id="fundingGate" class="fail hidden"></p>
     <p class="kv treasury-line"><span>pay to treasury</span><br /><b id="treasuryPay" class="treasury">—</b></p>
     <p class="kv"><span>valid through block</span> <b id="deadline">—</b></p>
     <label>copyable CLI notes (no custodial broadcast)</label>
@@ -80,7 +88,9 @@
   </div>
 
   <h2>05 reveal</h2>
-  <p class="banner">Load a keyfile. Emit both reveal OP_RETURN chunks in one transaction. Transparent in/out must match minerTag.</p>
+  <p class="banner">Load a keyfile. Emit both reveal OP_RETURN chunks in one transaction. Transparent in/out must match minerTag. Reveal change goes to your return address (not back to the burner) — same fee already budgeted.</p>
+  <label>return change to (transparent address — recoverable from keyfile later)</label>
+  <input id="revealReturnAddr" type="text" spellcheck="false" autocomplete="off" placeholder="t1… or tm… on testnet" />
   <label>keyfile</label>
   <input id="keyfileInput" type="file" accept="application/json,.json" />
   <p id="revealMeta" class="kv"></p>

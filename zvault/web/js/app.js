@@ -9,6 +9,15 @@ import {
 import { checkVectors } from "./check-vectors.js";
 import { TREASURY } from "./config.js";
 import { resolveTableStateUrls } from "./pub-urls.js";
+import {
+  assertBurnerFunded,
+  formatZec,
+  fundingAmount,
+  fundingFromBid,
+} from "./tx/funding.js";
+
+/** Burner UTXO balance in zatoshis once the signer is live; null until then. */
+let burnerBalanceZat = null;
 
 const SEAT_BOUNDS = [[8, 4], [24, 3], [56, 2], [88, 1]];
 const TIER_NAMES = ["drone", "runner", "warden", "cipher", "oracle"];
@@ -102,6 +111,11 @@ function project() {
   const floor = table?.floor_price_zat ?? 0;
   const pay = floor * (1 + money);
   $("pay").textContent = `${(pay / 1e8).toFixed(4)} ZEC  (${pay} zat)`;
+  // C1: ONE number from live floor × (1 + money) — never a hardcoded total.
+  const fund = floor > 0 ? fundingFromBid(floor, money) : fundingAmount({ payZat: 0 });
+  $("fundingNeed").textContent =
+    `${formatZec(fund.totalZat)} ZEC (${fund.totalZat} zat) ` +
+    `= pay ${fund.payZat} + mintFee ${fund.mintFeeZat} + revealFee ${fund.revealFeeZat} + buffer ${fund.bufferZat}`;
   // TREASURY is a build-time constant — never from fetched JSON.
   $("treasuryBid").textContent = TREASURY;
 
@@ -127,6 +141,11 @@ async function mine() {
   const patience = +$("patience").value;
   const money = +$("money").value;
   const tag = tagFromHex($("tag").value);
+  // Refuse to mine if we already know the burner cannot cover mint+reveal.
+  const fundPreview = fundingFromBid(table.floor_price_zat ?? 0, money);
+  if (burnerBalanceZat != null) {
+    assertBurnerFunded(burnerBalanceZat, fundPreview);
+  }
 
   const secret = randomBytes32();
   const seed = randomBytes32();
@@ -203,12 +222,19 @@ async function mine() {
     mined_at: Math.floor(Date.now() / 1000),
     protocol: "zvault-v2",
   };
+  const funding = fundingFromBid(floor, money);
   minedRecord = {
     recordHex: bytesToHex(record),
     payZat: pay,
+    funding,
     lastOk,
     bits,
   };
+  keyfile.funding_zat = funding.totalZat;
+  keyfile.mint_fee_zat = funding.mintFeeZat;
+  keyfile.reveal_fee_zat = funding.revealFeeZat;
+  const retAddr = $("revealReturnAddr")?.value?.trim();
+  if (retAddr) keyfile.reveal_return_address = retAddr;
 
   $("mineStatus").textContent = "SOLUTION FOUND";
   $("keyfileWarn").classList.remove("hidden");
@@ -229,21 +255,45 @@ function downloadKeyfile() {
   // Only now reveal the record
   $("recordBox").classList.remove("hidden");
   $("opreturn").textContent = minedRecord.recordHex;
-  $("payExact").textContent = `${(minedRecord.payZat / 1e8).toFixed(8)} ZEC (${minedRecord.payZat} zat)`;
+  const fund = minedRecord.funding;
+  $("payExact").textContent = `${formatZec(minedRecord.payZat)} ZEC (${minedRecord.payZat} zat)`;
+  $("fundingExact").textContent =
+    `${formatZec(fund.totalZat)} ZEC (${fund.totalZat} zat) — send this ONE amount to the burner`;
+  const gate = $("fundingGate");
+  if (burnerBalanceZat != null) {
+    try {
+      assertBurnerFunded(burnerBalanceZat, fund);
+      gate.classList.add("hidden");
+      gate.textContent = "";
+    } catch (e) {
+      gate.textContent = String(e.message || e);
+      gate.classList.remove("hidden");
+    }
+  } else {
+    gate.classList.add("hidden");
+  }
   $("treasuryPay").textContent = TREASURY;
   $("deadline").textContent = String(minedRecord.lastOk);
   $("cliCmd").textContent =
     `# Broadcast BEFORE block ${minedRecord.lastOk}\n` +
-    `# Pay exactly ${minedRecord.payZat} zatoshis to TREASURY (transparent):\n` +
+    `# Fund burner with ${fund.totalZat} zat (${formatZec(fund.totalZat)} ZEC) — ONE number:\n` +
+    `#   pay ${fund.payZat} + mintFee ${fund.mintFeeZat} + revealFee ${fund.revealFeeZat} + buffer ${fund.bufferZat}\n` +
+    `# Treasury payment inside the mint tx: ${minedRecord.payZat} zat to:\n` +
     `#   ${TREASURY}\n` +
     `# Compare this address to the repo / launch thread before sending.\n` +
     `# Attach OP_RETURN payload (hex):\n${minedRecord.recordHex}\n\n` +
     `# Example shape (zallet / zcash-cli):\n` +
     `zcash-cli createrawtransaction '[]' ` +
-    `'{"data":"${minedRecord.recordHex}","${TREASURY}":${(minedRecord.payZat / 1e8).toFixed(8)}}'\n` +
+    `'{"data":"${minedRecord.recordHex}","${TREASURY}":${formatZec(minedRecord.payZat)}}'\n` +
     `# then fundrawtransaction + sign + sendrawtransaction\n` +
-    `# amount = ${minedRecord.payZat} zat = ${(minedRecord.payZat / 1e8).toFixed(8)} ZEC`;
+    `# amount = ${minedRecord.payZat} zat = ${formatZec(minedRecord.payZat)} ZEC`;
   $("recordPending").textContent = "Keyfile saved. Back it up offline. Then broadcast.";
+}
+
+/** Called by the burner/signer once UTXO balance is known (T5+). */
+export function setBurnerBalanceZat(zat) {
+  burnerBalanceZat = zat;
+  if (table) project();
 }
 
 function copyText(id) {
