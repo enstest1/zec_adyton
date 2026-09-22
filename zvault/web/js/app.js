@@ -1,5 +1,6 @@
 /**
- * Mint + reveal page logic. No secrets leave the browser.
+ * Mint + reveal page — burner wired end-to-end (B1–B7).
+ * No secrets leave the browser. No bundler; relative imports only.
  */
 import {
   buildCommitment, challengeFor, buildRecord, buildRevealChunks,
@@ -7,7 +8,10 @@ import {
   MAX_WORK_BITS, MAX_PATIENCE, MAX_MONEY, CHALLENGE_WINDOW,
 } from "./protocol.js";
 import { checkVectors } from "./check-vectors.js";
-import { TREASURY, PAGE_NETWORK, assertTreasuryForNetwork } from "./config.js";
+import {
+  TREASURY, PAGE_NETWORK, assertTreasuryForNetwork,
+  utxosJsonUrl, DEFAULT_RELAY_URL,
+} from "./config.js";
 import { resolveTableStateUrls } from "./pub-urls.js";
 import {
   assertBurnerFunded,
@@ -15,19 +19,35 @@ import {
   fundingAmount,
   fundingFromBid,
 } from "./tx/funding.js";
-import { buildKeyfile, KEYFILE_FUNDS_WARNING } from "./tx/keyfile.js";
+import {
+  buildKeyfile, recoverFromKeyfile,
+  KEYFILE_FUNDS_WARNING, KEYFILE_STAGE_FUNDS, KEYFILE_STAGE_MINT,
+} from "./tx/keyfile.js";
+import { generatePrivKey } from "./tx/keys.js";
+import { addressFromPriv } from "./tx/address.js";
+import { buildSignMint, buildSignReveal, buildSignAbandonSweep } from "./tx/builder.js";
+import { relayBroadcast } from "./tx/validate.js";
+import { parseBranchId } from "./tx/consensus.js";
+import { parseTxV5 } from "./tx/v5.js";
+import { hexToBytes as hxTx } from "./tx/serialize.js";
 
-/** Burner UTXO balance in zatoshis once the signer is live; null until then. */
+/** UTXO poll interval — hits publisher files, not Tatum (0 of 5 rpm). */
+const UTXO_POLL_MS = 20_000;
+const STATUS_POLL_MS = 15_000;
+
 let burnerBalanceZat = null;
+let burnerUtxos = [];
+let pollTimer = null;
+let statusTimer = null;
 
 const SEAT_BOUNDS = [[8, 4], [24, 3], [56, 2], [88, 1]];
 const TIER_NAMES = ["drone", "runner", "warden", "cipher", "oracle"];
 const FLOOR_PERMILLE = [0, 200, 420, 640, 840];
 const EPOCH_SIZE = 128;
+const PATIENCE_UNIT = 1152;
 
 const $ = (id) => document.getElementById(id);
 
-// Same-origin only; cross-origin ?table= / ?state= throws (see pub-urls.js).
 let TABLE_URL;
 let STATE_URL;
 try {
@@ -36,12 +56,26 @@ try {
     location.href,
   ));
 } catch (e) {
-  // Surface immediately — do not fall back to attacker-controlled or default
-  // paths after a refused override (would hide the attack).
   TABLE_URL = null;
   STATE_URL = null;
   window.__pubUrlError = e;
 }
+
+/** Session state restored from keyfile or generated in-page. */
+let session = {
+  burnerPriv: null,
+  burnerAddress: null,
+  burnerTagHex: null,
+  fundsKeyfileDownloaded: false,
+  mintKeyfileDownloaded: false,
+  keyfile: null,
+  minedRecord: null,
+  mintTxid: null,
+  revealTxid: null,
+};
+
+let table = null;
+let state = null;
 
 function maxLiveScore() { return scoreOf(MAX_WORK_BITS, MAX_PATIENCE, 0, MAX_MONEY); }
 function scoreFloors() {
@@ -62,16 +96,20 @@ function assignTier(rank, n, score) {
   return Math.min(tierForRank(rank, n), tierByScore(score) + 1);
 }
 
-function tagFromHex(hex) {
-  const h = hex.trim().replace(/^0x/, "");
-  if (h.length !== 40) throw new Error("minerTag must be 20 bytes (40 hex chars)");
-  return hexToBytes(h);
+function forceDownload(obj, filename) {
+  const blob = new Blob([JSON.stringify([obj], null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
-let table = null;
-let state = null;
-let keyfile = null; // held until user downloads
-let minedRecord = null;
+function relayBase() {
+  const q = new URLSearchParams(location.search).get("relay");
+  if (q) return q.replace(/\/$/, "");
+  return (DEFAULT_RELAY_URL || "").replace(/\/$/, "");
+}
 
 async function refreshTable() {
   if (!TABLE_URL || !STATE_URL) {
@@ -112,21 +150,22 @@ function project() {
   const floor = table?.floor_price_zat ?? 0;
   const pay = floor * (1 + money);
   $("pay").textContent = `${(pay / 1e8).toFixed(4)} ZEC  (${pay} zat)`;
-  // C1: ONE number from live floor × (1 + money) — never a hardcoded total.
   const fund = floor > 0 ? fundingFromBid(floor, money) : fundingAmount({ payZat: 0 });
+  // Recompute mint fee from actual UTXO count when known.
+  const nIn = Math.max(1, burnerUtxos.length || 1);
+  const fundLive = fundingFromBid(floor || 0, money, { nInMint: nIn });
   $("fundingNeed").textContent =
-    `${formatZec(fund.totalZat)} ZEC (${fund.totalZat} zat) ` +
-    `= pay ${fund.payZat} + mintFee ${fund.mintFeeZat} + revealFee ${fund.revealFeeZat} + buffer ${fund.bufferZat}`;
-  // TREASURY is a build-time constant — never from fetched JSON.
+    `${formatZec(fundLive.totalZat)} ZEC (${fundLive.totalZat} zat) ` +
+    `= pay ${fundLive.payZat} + mintFee ${fundLive.mintFeeZat} + revealFee ${fundLive.revealFeeZat} + buffer ${fundLive.bufferZat}` +
+    (burnerUtxos.length > 1 ? ` · ${burnerUtxos.length} UTXOs (fee rises)` : "");
   $("treasuryBid").textContent = TREASURY;
 
   const ep = table?.epoch;
   const field = (ep && ep.open && ep.bids) ? ep.bids.map((b) => b.score) : [];
-  // Rank if we joined now: how many current bids beat us
   const better = field.filter((s) => s > score).length;
   const tied = field.filter((s) => s === score).length;
   const nIfJoin = field.length + 1;
-  const rank = better; // optimistic: ties break on seal lottery
+  const rank = better;
   const tierNow = assignTier(rank, Math.max(nIfJoin, 1), score);
   const tierFull = assignTier(rank, EPOCH_SIZE, score);
   $("proj").textContent =
@@ -136,14 +175,144 @@ function project() {
     ` · later higher bids can still push you down`;
 }
 
+// ----- B0 / B3: balance via publisher utxo files (not node address index) -----
+
+async function fetchBurnerUtxos(address) {
+  const url = utxosJsonUrl(address);
+  const res = await fetch(url, { cache: "no-store" });
+  if (res.status === 404) {
+    return { balanceZat: 0, utxos: [], height: null };
+  }
+  if (!res.ok) throw new Error(`utxos ${res.status}`);
+  return res.json();
+}
+
+function renderBalance(needZat) {
+  const have = burnerBalanceZat ?? 0;
+  const el = $("burnerBal");
+  const st = $("fundStatus");
+  if (!session.fundsKeyfileDownloaded) {
+    el.textContent = "download funds keyfile first";
+    return;
+  }
+  if (burnerBalanceZat == null) {
+    el.textContent = "polling… (publisher index; not Tatum address-RPC)";
+    return;
+  }
+  el.textContent = `${formatZec(have)} ZEC (${have} zat)` +
+    (needZat ? ` / need ${needZat} zat` : "");
+  if (needZat && have < needZat) {
+    const short = needZat - have;
+    st.textContent =
+      `UNDERFUNDED — short ${short} zat (${formatZec(short)} ZEC). ` +
+      `Send the shortfall in one top-up (still prefer a single original send).`;
+    st.classList.add("fail");
+    $("btnMine").disabled = true;
+  } else if (needZat && have >= needZat) {
+    st.textContent = "Funded. You can mine.";
+    st.classList.remove("fail");
+    $("btnMine").disabled = !session.fundsKeyfileDownloaded;
+  } else {
+    st.textContent = have > 0 ? "Balance seen — set bid to see funding target." : "No UTXOs yet.";
+    st.classList.remove("fail");
+  }
+  $("btnAbandon").classList.toggle("hidden", !(have > 0 && session.burnerPriv));
+  $("btnAbandon").disabled = !(have > 0 && session.burnerPriv && $("revealReturnAddr").value.trim());
+}
+
+async function pollBalanceOnce() {
+  if (!session.burnerAddress || !session.fundsKeyfileDownloaded) return;
+  try {
+    const data = await fetchBurnerUtxos(session.burnerAddress);
+    burnerUtxos = data.utxos || [];
+    burnerBalanceZat = data.balanceZat ?? burnerUtxos.reduce((s, u) => s + u.valueZat, 0);
+    const money = +$("money").value;
+    const floor = table?.floor_price_zat ?? 0;
+    const nIn = Math.max(1, burnerUtxos.length || 1);
+    const need = floor > 0 ? fundingFromBid(floor, money, { nInMint: nIn }).totalZat : 0;
+    renderBalance(need);
+    project();
+  } catch (e) {
+    $("fundStatus").textContent =
+      `UTXO poll: ${e.message || e}. Publisher must be indexing live blocks (B0).`;
+  }
+}
+
+function startBalancePoll() {
+  stopBalancePoll();
+  pollBalanceOnce();
+  pollTimer = setInterval(pollBalanceOnce, UTXO_POLL_MS);
+}
+
+function stopBalancePoll() {
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = null;
+}
+
+// ----- B1 / B2: burner generation + stage-1 keyfile gate -----
+
+function generateBurnerFlow() {
+  const ret = $("revealReturnAddr").value.trim();
+  if (!ret) {
+    alert("Set a return address first — needed for reveal change and abandon-sweep.");
+    return;
+  }
+  const priv = generatePrivKey();
+  const net = PAGE_NETWORK === "main" ? "main" : "test";
+  const addr = addressFromPriv(priv, net);
+  session.burnerPriv = priv;
+  session.burnerAddress = addr.address;
+  session.burnerTagHex = addr.tagHex;
+  session.fundsKeyfileDownloaded = false;
+  session.mintKeyfileDownloaded = false;
+
+  const floor = table?.floor_price_zat ?? 0;
+  const money = +$("money").value;
+  const funding = floor > 0 ? fundingFromBid(floor, money) : fundingAmount({ payZat: 0 });
+
+  const fundsFile = buildKeyfile({
+    stage: KEYFILE_STAGE_FUNDS,
+    network: PAGE_NETWORK,
+    burner: {
+      priv_hex: bytesToHex(priv),
+      address: addr.address,
+      tag: addr.tagHex,
+    },
+    tag: addr.tagHex,
+    reveal_return_address: ret,
+    funding_zat: funding.totalZat,
+    created_at: Math.floor(Date.now() / 1000),
+  });
+  // Gate: download BEFORE revealing the funding address (same pattern as OP_RETURN).
+  forceDownload(fundsFile, `zvault-funds-${addr.address.slice(0, 10)}.json`);
+  session.fundsKeyfileDownloaded = true;
+  session.keyfile = fundsFile;
+
+  $("burnerBox").classList.remove("hidden");
+  $("burnerAddr").textContent = addr.address;
+  $("burnerTag").textContent = addr.tagHex;
+  $("btnPollBal").disabled = false;
+  $("btnMine").disabled = false;
+  $("fundStatus").textContent =
+    "Funds keyfile downloaded. Store it offline, then send the ONE amount below to the burner.";
+  startBalancePoll();
+  project();
+  renderBalance(funding.totalZat);
+}
+
+// ----- B4: mine + stage-2 keyfile + sign -----
+
 async function mine() {
+  if (!session.fundsKeyfileDownloaded || !session.burnerPriv) {
+    throw new Error("generate burner + download funds keyfile first");
+  }
   if (!table?.tip_hash) throw new Error("no tip_hash in table — publisher not ready");
   const work = +$("work").value;
   const patience = +$("patience").value;
   const money = +$("money").value;
-  const tag = tagFromHex($("tag").value);
-  // Refuse to mine if we already know the burner cannot cover mint+reveal.
-  const fundPreview = fundingFromBid(table.floor_price_zat ?? 0, money);
+  const tag = hexToBytes(session.burnerTagHex);
+  const nIn = Math.max(1, burnerUtxos.length || 1);
+  const fundPreview = fundingFromBid(table.floor_price_zat ?? 0, money, { nInMint: nIn });
   if (burnerBalanceZat != null) {
     assertBurnerFunded(burnerBalanceZat, fundPreview);
   }
@@ -160,7 +329,8 @@ async function mine() {
   $("hashRate").textContent = "0";
   $("recordBox").classList.add("hidden");
   $("keyfileGate").classList.remove("hidden");
-  minedRecord = null;
+  session.minedRecord = null;
+  session.mintKeyfileDownloaded = false;
 
   const cores = Math.max(1, navigator.hardwareConcurrency || 2);
   const workers = [];
@@ -206,162 +376,361 @@ async function mine() {
   const record = buildRecord(commitment, nonce, work, patience, 0, money, tag);
   const floor = table.floor_price_zat;
   const pay = floor * (1 + money);
+  const funding = fundingFromBid(floor, money, { nInMint: nIn });
+  const retAddr = $("revealReturnAddr").value.trim();
 
-  keyfile = buildKeyfile({
+  session.keyfile = buildKeyfile({
+    stage: KEYFILE_STAGE_MINT,
+    network: PAGE_NETWORK,
     commitment: bytesToHex(commitment),
     secret: bytesToHex(secret),
     seed: bytesToHex(seed),
     salt: bytesToHex(salt),
     work, patience, burn: 0, money,
     nonce: nonce.toString(),
-    tag: bytesToHex(tag),
+    tag: session.burnerTagHex,
+    burner: {
+      priv_hex: bytesToHex(session.burnerPriv),
+      address: session.burnerAddress,
+      tag: session.burnerTagHex,
+    },
+    reveal_return_address: retAddr,
     challenge_height: table.tip_height,
     tip_hash: table.tip_hash,
     floor_zat: floor,
     pay_zat: pay,
+    funding_zat: funding.totalZat,
+    mint_fee_zat: funding.mintFeeZat,
+    reveal_fee_zat: funding.revealFeeZat,
     valid_through_height: lastOk,
     mined_at: Math.floor(Date.now() / 1000),
   });
-  const funding = fundingFromBid(floor, money);
-  minedRecord = {
+  session.minedRecord = {
     recordHex: bytesToHex(record),
     payZat: pay,
     funding,
     lastOk,
     bits,
   };
-  keyfile.funding_zat = funding.totalZat;
-  keyfile.mint_fee_zat = funding.mintFeeZat;
-  keyfile.reveal_fee_zat = funding.revealFeeZat;
-  const retAddr = $("revealReturnAddr")?.value?.trim();
-  if (retAddr) keyfile.reveal_return_address = retAddr;
 
-  $("mineStatus").textContent = "SOLUTION FOUND";
-  $("keyfileWarn").classList.remove("hidden");
+  $("mineStatus").textContent = "SOLUTION FOUND — download mint keyfile to continue";
   $("btnSaveKey").disabled = false;
   $("recordPending").textContent =
     KEYFILE_FUNDS_WARNING +
-    " OP_RETURN hex is withheld until you download the keyfile.";
+    " Stage-2 mint keyfile withheld OP_RETURN until download. It replaces stage 1 for reveal.";
 }
 
-function downloadKeyfile() {
-  if (!keyfile) return;
-  const blob = new Blob([JSON.stringify([keyfile], null, 2)], { type: "application/json" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `zvault-keys-${keyfile.commitment.slice(0, 8)}.json`;
-  a.click();
-  URL.revokeObjectURL(a.href);
+function downloadMintKeyfile() {
+  if (!session.keyfile || session.keyfile.stage !== KEYFILE_STAGE_MINT) return;
+  forceDownload(
+    session.keyfile,
+    `zvault-mint-${session.keyfile.commitment.slice(0, 8)}.json`
+  );
+  session.mintKeyfileDownloaded = true;
+  unlockRecordBox();
+}
 
-  // Only now reveal the record
+function unlockRecordBox() {
+  const mr = session.minedRecord;
+  if (!mr) return;
   $("recordBox").classList.remove("hidden");
-  $("opreturn").textContent = minedRecord.recordHex;
-  const fund = minedRecord.funding;
-  $("payExact").textContent = `${formatZec(minedRecord.payZat)} ZEC (${minedRecord.payZat} zat)`;
+  $("opreturn").textContent = mr.recordHex;
+  const fund = mr.funding;
+  $("payExact").textContent = `${formatZec(mr.payZat)} ZEC (${mr.payZat} zat)`;
   $("fundingExact").textContent =
-    `${formatZec(fund.totalZat)} ZEC (${fund.totalZat} zat) — send this ONE amount to the burner`;
+    `${formatZec(fund.totalZat)} ZEC (${fund.totalZat} zat) — ONE send to burner`;
   const gate = $("fundingGate");
   if (burnerBalanceZat != null) {
     try {
       assertBurnerFunded(burnerBalanceZat, fund);
       gate.classList.add("hidden");
-      gate.textContent = "";
     } catch (e) {
       gate.textContent = String(e.message || e);
       gate.classList.remove("hidden");
     }
-  } else {
-    gate.classList.add("hidden");
   }
   $("treasuryPay").textContent = TREASURY;
-  $("deadline").textContent = String(minedRecord.lastOk);
+  $("deadline").textContent = String(mr.lastOk);
   $("cliCmd").textContent =
-    `# Broadcast BEFORE block ${minedRecord.lastOk}\n` +
-    `# Fund burner with ${fund.totalZat} zat (${formatZec(fund.totalZat)} ZEC) — ONE number:\n` +
-    `#   pay ${fund.payZat} + mintFee ${fund.mintFeeZat} + revealFee ${fund.revealFeeZat} + buffer ${fund.bufferZat}\n` +
-    `# Treasury payment inside the mint tx: ${minedRecord.payZat} zat to:\n` +
-    `#   ${TREASURY}\n` +
-    `# Compare this address to the repo / launch thread before sending.\n` +
-    `# Attach OP_RETURN payload (hex):\n${minedRecord.recordHex}\n\n` +
-    `# Example shape (zallet / zcash-cli):\n` +
-    `zcash-cli createrawtransaction '[]' ` +
-    `'{"data":"${minedRecord.recordHex}","${TREASURY}":${formatZec(minedRecord.payZat)}}'\n` +
-    `# then fundrawtransaction + sign + sendrawtransaction\n` +
-    `# amount = ${minedRecord.payZat} zat = ${formatZec(minedRecord.payZat)} ZEC`;
+    `# Broadcast BEFORE block ${mr.lastOk}\n` +
+    `# Treasury ${mr.payZat} zat → ${TREASURY}\n` +
+    `# OP_RETURN:\n${mr.recordHex}\n`;
   $("recordPending").textContent =
-    "Keyfile saved offline. It protects FUNDS and openability. Then fund (one send) and broadcast.";
-  // Signed hex filled by the signer once built; until then show placeholder.
-  if ($("signedHex") && $("signedHex").textContent === "—") {
-    $("signedHex").textContent =
-      "(signer will place already-signed mint hex here — copy and broadcast yourself, or use the postbox relay)";
+    "Mint keyfile saved. Sign when funded; signed hex always shown (relay optional).";
+  $("signedHex").textContent = "(not signed yet — click sign mint)";
+}
+
+function branchIdFromState() {
+  if (!state?.consensus_nextblock) {
+    throw new Error(
+      "state.json missing consensus_nextblock — publisher must publish chain meta"
+    );
+  }
+  return parseBranchId(state.consensus_nextblock);
+}
+
+async function signAndBroadcastMint() {
+  if (!session.mintKeyfileDownloaded) throw new Error("download mint keyfile first");
+  if (!session.minedRecord || !session.burnerPriv) throw new Error("nothing to sign");
+  await pollBalanceOnce();
+  if (!burnerUtxos.length) throw new Error("no UTXOs on burner — fund first");
+  const kf = session.keyfile;
+  const record = hexToBytes(session.minedRecord.recordHex);
+  const net = PAGE_NETWORK === "main" ? "main" : "test";
+  const branchId = branchIdFromState();
+  const built = buildSignMint({
+    utxos: burnerUtxos,
+    payZat: kf.pay_zat,
+    treasuryAddress: TREASURY,
+    opReturnPayload: record,
+    changeAddress: session.burnerAddress,
+    network: net,
+    consensusBranchId: branchId,
+    nExpiryHeight: kf.valid_through_height || (table.tip_height + 20),
+    priv: session.burnerPriv,
+  });
+  // Local structural check (node decode happens via relay mempool accept).
+  parseTxV5(hxTx(built.hex));
+  $("signedHex").textContent = built.hex;
+
+  let txid = null;
+  const base = relayBase();
+  if (base) {
+    txid = await relayBroadcast(base, built.hex);
+    $("broadcastStatus").textContent = `Relayed txid=${txid}`;
+  } else {
+    $("broadcastStatus").textContent =
+      "Signed. No relay URL configured (?relay=http://host:8091). Copy hex and broadcast yourself.";
+  }
+  session.mintTxid = txid;
+  session.keyfile.mint_txid = txid || undefined;
+  session.keyfile.mint_hex = built.hex;
+  startStatusPoll();
+  return txid;
+}
+
+// ----- B5: post-broadcast status -----
+
+function findMintInTable(commitmentHex) {
+  const bids = table?.epoch?.bids || [];
+  for (const b of bids) {
+    if (b.commitment === commitmentHex || b.commitment?.hex === commitmentHex) {
+      return b;
+    }
+  }
+  // state may list commitments
+  for (const c of state?.commitments || []) {
+    const h = typeof c === "string" ? c : c.commitment;
+    if (h === commitmentHex) return c;
+  }
+  return null;
+}
+
+async function refreshPostStatus() {
+  const box = $("postStatus");
+  if (!session.keyfile?.commitment) {
+    box.textContent = "No mint commitment in session — load a mint keyfile to track.";
+    return;
+  }
+  try {
+    await refreshTable();
+  } catch (e) {
+    box.textContent = `status: ${e.message || e}`;
+    return;
+  }
+  const tip = table.tip_height;
+  const c = session.keyfile.commitment;
+  const hit = findMintInTable(c);
+  const ep = table.epoch || {};
+  let lines = [];
+  lines.push(`tip ${tip} · digest ${(state.digest || "").slice(0, 12)}…`);
+  if (session.mintTxid) lines.push(`mint txid ${session.mintTxid}`);
+  if (!hit) {
+    lines.push("mint not yet indexed — waiting for publisher confirmations");
+  } else {
+    const idx = hit.index ?? hit.mint_index ?? session.keyfile.mint_index;
+    if (idx != null) {
+      session.keyfile.mint_index = idx;
+      $("revealIndex").value = String(idx);
+      lines.push(`indexed as mint #${idx}`);
+    } else {
+      lines.push("commitment seen in table (index pending)");
+    }
+  }
+  if (ep.open) {
+    lines.push(
+      `epoch #${ep.number} open ${ep.filled}/${ep.seats} · seal timeout ${ep.timeout_height} (${ep.timeout_height - tip} blocks)`
+    );
+  } else {
+    lines.push(`epoch #${ep.number} — waiting for next seat / seal`);
+  }
+  const patience = session.keyfile.patience || 0;
+  const mintH = session.keyfile.challenge_height;
+  const unlock = mintH + patience * PATIENCE_UNIT;
+  lines.push(
+    patience === 0
+      ? "patience 0 — reveal after epoch seal"
+      : `patience unlock ≥ height ${unlock} (~${Math.max(0, unlock - tip)} blocks) — indexer enforces exact mint height + seal`
+  );
+  if (session.revealTxid) lines.push(`reveal txid ${session.revealTxid}`);
+  box.textContent = lines.join("\n");
+}
+
+function startStatusPoll() {
+  stopStatusPoll();
+  refreshPostStatus();
+  statusTimer = setInterval(refreshPostStatus, STATUS_POLL_MS);
+}
+
+function stopStatusPoll() {
+  if (statusTimer) clearInterval(statusTimer);
+  statusTimer = null;
+}
+
+// ----- B6: reveal + abandon -----
+
+async function signAndBroadcastReveal() {
+  const kf = session.keyfile;
+  if (!kf || !recoverFromKeyfile(kf).canReveal) {
+    throw new Error("load a stage-2 mint keyfile first");
+  }
+  await refreshTable();
+  await pollBalanceOnce();
+  if (!burnerUtxos.length) throw new Error("no burner UTXOs left for reveal fee/change");
+  const index = +$("revealIndex").value;
+  const [a, b] = buildRevealChunks(
+    index,
+    hexToBytes(kf.secret),
+    hexToBytes(kf.seed),
+    hexToBytes(kf.salt),
+  );
+  $("revealA").textContent = bytesToHex(a);
+  $("revealB").textContent = bytesToHex(b);
+  $("revealOut").classList.remove("hidden");
+
+  const ret = kf.reveal_return_address || $("revealReturnAddr").value.trim();
+  if (!ret) throw new Error("return address required for reveal change");
+  const priv = session.burnerPriv || hexToBytes(kf.burner.priv_hex);
+  const net = PAGE_NETWORK === "main" ? "main" : "test";
+  const built = buildSignReveal({
+    utxos: burnerUtxos,
+    chunkA: a,
+    chunkB: b,
+    returnAddress: ret,
+    network: net,
+    consensusBranchId: branchIdFromState(),
+    nExpiryHeight: (table.tip_height || 0) + 20,
+    priv,
+  });
+  parseTxV5(hxTx(built.hex));
+  $("revealSigned").textContent = built.hex;
+
+  const base = relayBase();
+  if (base) {
+    const txid = await relayBroadcast(base, built.hex);
+    session.revealTxid = txid;
+    $("revealStatus").textContent = `Reveal relayed txid=${txid}`;
+  } else {
+    $("revealStatus").textContent =
+      "Reveal signed. Copy hex and broadcast (no relay configured).";
   }
 }
 
-/** Called by the burner/signer once UTXO balance is known (T5+). */
-export function setBurnerBalanceZat(zat) {
-  burnerBalanceZat = zat;
-  if (table) project();
-}
-
-function copyText(id) {
-  const t = $(id).textContent;
-  navigator.clipboard.writeText(t);
-}
-
-// ----- reveal flow ----------------------------------------------------------
-
-function loadKeyfile(file) {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => {
-      try {
-        const data = JSON.parse(r.result);
-        const entry = Array.isArray(data) ? data[0] : data;
-        resolve(entry);
-      } catch (e) { reject(e); }
-    };
-    r.onerror = reject;
-    r.readAsText(file);
+async function abandonSweep() {
+  const ret = $("revealReturnAddr").value.trim();
+  if (!ret || !session.burnerPriv) throw new Error("return address + burner required");
+  await pollBalanceOnce();
+  if (!burnerUtxos.length) throw new Error("nothing to sweep");
+  const net = PAGE_NETWORK === "main" ? "main" : "test";
+  const built = buildSignAbandonSweep({
+    utxos: burnerUtxos,
+    destAddress: ret,
+    network: net,
+    consensusBranchId: branchIdFromState(),
+    nExpiryHeight: (table?.tip_height || 0) + 20,
+    priv: session.burnerPriv,
   });
+  $("signedHex").textContent = built.hex;
+  $("recordBox").classList.remove("hidden");
+  const base = relayBase();
+  if (base) {
+    const txid = await relayBroadcast(base, built.hex);
+    $("broadcastStatus").textContent = `Abandon-sweep txid=${txid}`;
+  } else {
+    $("broadcastStatus").textContent = "Abandon-sweep signed — broadcast the hex yourself.";
+  }
 }
 
-async function prepareReveal(entry) {
-  await refreshTable();
-  const tip = table.tip_height;
-  // We need seal + patience from chain state — state.json does not list per-mint
-  // unlock. For v1 we emit chunks and let the indexer reject if early; surface
-  // what we know from the keyfile.
-  const mintHeight = entry.challenge_height; // approximate; real unlock uses mint height
-  const unlock = mintHeight + entry.patience * 1152;
-  $("revealStatus").textContent =
-    `tip ${tip} · keyfile patience unlock ≥ ${unlock} (approx from challenge height) · ` +
-    `indexer enforces seal + exact mint height`;
+// ----- B7: resume from keyfile -----
 
-  const [a, b] = buildRevealChunks(
-    entry.index ?? 0,
-    hexToBytes(entry.secret),
-    hexToBytes(entry.seed),
-    hexToBytes(entry.salt),
-  );
-  // If index unknown, user must set it
-  const index = +$("revealIndex").value;
-  const [a2, b2] = buildRevealChunks(
-    index,
-    hexToBytes(entry.secret),
-    hexToBytes(entry.seed),
-    hexToBytes(entry.salt),
-  );
-  $("revealA").textContent = bytesToHex(a2);
-  $("revealB").textContent = bytesToHex(b2);
-  $("revealCli").textContent =
-    `# Two OP_RETURN outputs in ONE transaction; transparent in/out must match minerTag ${entry.tag}\n` +
-    `# Chunk A (74 bytes):\n${bytesToHex(a2)}\n` +
-    `# Chunk B (42 bytes):\n${bytesToHex(b2)}\n` +
-    `# Broadcast only after epoch sealed and patience served.`;
-  $("revealOut").classList.remove("hidden");
+async function resumeFromKeyfile(entry) {
+  const rec = recoverFromKeyfile(entry);
+  session.keyfile = entry;
+  if (rec.burnerPrivHex) {
+    session.burnerPriv = hexToBytes(rec.burnerPrivHex);
+  }
+  session.burnerAddress = rec.burnerAddress;
+  session.burnerTagHex = rec.minerTag;
+  session.fundsKeyfileDownloaded = true;
+  if (rec.revealReturnAddress) {
+    $("revealReturnAddr").value = rec.revealReturnAddress;
+  }
+  if (session.burnerAddress) {
+    $("burnerBox").classList.remove("hidden");
+    $("burnerAddr").textContent = session.burnerAddress;
+    $("burnerTag").textContent = session.burnerTagHex || "—";
+    $("btnPollBal").disabled = false;
+    startBalancePoll();
+  }
+  $("revealMeta").textContent =
+    `stage=${rec.stage} · commitment ${(entry.commitment || "").slice(0, 16) || "(funds only)"}… · tag ${rec.minerTag || "—"}`;
+
+  if (rec.stage === KEYFILE_STAGE_FUNDS) {
+    $("mineStatus").textContent = "Resumed stage-1 funds keyfile — fund burner, then mine.";
+    $("btnMine").disabled = false;
+    return;
+  }
+
+  // Stage mint
+  session.mintKeyfileDownloaded = true;
+  if (entry.pay_zat != null && entry.commitment) {
+    session.minedRecord = {
+      recordHex: entry.record_hex || null,
+      payZat: entry.pay_zat,
+      funding: {
+        totalZat: entry.funding_zat,
+        payZat: entry.pay_zat,
+        mintFeeZat: entry.mint_fee_zat,
+        revealFeeZat: entry.reveal_fee_zat,
+        bufferZat: 10000,
+      },
+      lastOk: entry.valid_through_height,
+    };
+    // Rebuild record if missing
+    if (!session.minedRecord.recordHex && entry.nonce != null) {
+      const record = buildRecord(
+        hexToBytes(entry.commitment),
+        BigInt(entry.nonce),
+        entry.work,
+        entry.patience,
+        entry.burn || 0,
+        entry.money,
+        hexToBytes(entry.tag),
+      );
+      session.minedRecord.recordHex = bytesToHex(record);
+    }
+    if (session.minedRecord.recordHex) unlockRecordBox();
+  }
+  if (entry.mint_hex) $("signedHex").textContent = entry.mint_hex;
+  if (entry.mint_txid) session.mintTxid = entry.mint_txid;
+  if (entry.mint_index != null) $("revealIndex").value = String(entry.mint_index);
+  startStatusPoll();
+  $("mineStatus").textContent =
+    entry.mint_txid
+      ? "Resumed minted keyfile — tracking status / ready to reveal."
+      : "Resumed mined-not-broadcast — sign when funded.";
 }
 
-/** Poll pub/ for the rendered punk after the reveal tx confirms. */
 async function watchMyPunk(index) {
   $("revealStatus").textContent = `watching for punk #${index}…`;
   for (let i = 0; i < 120; i++) {
@@ -388,17 +757,34 @@ async function watchMyPunk(index) {
     `punk #${index} not in pub/ yet — is the publisher running?`;
 }
 
+function loadKeyfile(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        const data = JSON.parse(r.result);
+        resolve(Array.isArray(data) ? data[0] : data);
+      } catch (e) { reject(e); }
+    };
+    r.onerror = reject;
+    r.readAsText(file);
+  });
+}
+
+function copyText(id) {
+  navigator.clipboard.writeText($(id).textContent);
+}
+
 async function boot() {
   assertTreasuryForNetwork(TREASURY, PAGE_NETWORK);
   $("trust").textContent =
-    "This page is static. After load it only fetches same-origin table.json / state.json. " +
-    "Secrets, seeds and salts are created with crypto.getRandomValues and never uploaded. " +
-    `Treasury is network-scoped (${PAGE_NETWORK}) in the page source — never taken from those JSON files.`;
+    "Static page. Fetches same-origin table/state/utxos only. " +
+    "Burner keys never upload. Treasury is network-scoped in source. " +
+    `Network=${PAGE_NETWORK}. UTXOs come from the publisher block scan (Tatum has no address index).`;
   $("treasuryBid").textContent = TREASURY;
 
   if (window.__pubUrlError) {
-    const msg = String(window.__pubUrlError.message || window.__pubUrlError);
-    $("tableErr").textContent = msg;
+    $("tableErr").textContent = String(window.__pubUrlError.message || window.__pubUrlError);
     $("btnMine").disabled = true;
     $("btnRefresh").disabled = true;
     console.error(window.__pubUrlError);
@@ -424,16 +810,38 @@ async function boot() {
   }
 
   $("work").max = MAX_WORK_BITS;
+  $("work").value = String(MAX_WORK_BITS);
   $("patience").max = MAX_PATIENCE;
   $("money").max = MAX_MONEY;
-  ["work", "patience", "money"].forEach((id) => $(id).addEventListener("input", project));
+  ["work", "patience", "money"].forEach((id) => $(id).addEventListener("input", () => {
+    project();
+    if (session.burnerAddress) {
+      const floor = table?.floor_price_zat ?? 0;
+      const need = fundingFromBid(floor, +$("money").value, {
+        nInMint: Math.max(1, burnerUtxos.length || 1),
+      }).totalZat;
+      renderBalance(need);
+    }
+  }));
 
   $("btnRefresh").onclick = () => refreshTable().catch((e) => alert(e));
-  $("btnMine").onclick = () => mine().catch((e) => { $("mineStatus").textContent = String(e); console.error(e); });
-  $("btnSaveKey").onclick = downloadKeyfile;
+  $("btnGenBurner").onclick = () => {
+    try { generateBurnerFlow(); } catch (e) { alert(e); console.error(e); }
+  };
+  $("btnPollBal").onclick = () => pollBalanceOnce().catch((e) => alert(e));
+  $("btnMine").onclick = () => mine().catch((e) => {
+    $("mineStatus").textContent = String(e.message || e);
+    console.error(e);
+  });
+  $("btnSaveKey").onclick = downloadMintKeyfile;
+  $("btnSignMint").onclick = () => signAndBroadcastMint().catch((e) => {
+    $("broadcastStatus").textContent = String(e.message || e);
+    console.error(e);
+  });
+  $("btnAbandon").onclick = () => abandonSweep().catch((e) => alert(e));
   $("btnCopyOp").onclick = () => copyText("opreturn");
   $("btnCopyCli").onclick = () => copyText("cliCmd");
-  if ($("btnCopySigned")) $("btnCopySigned").onclick = () => copyText("signedHex");
+  $("btnCopySigned").onclick = () => copyText("signedHex");
 
   $("keyfileInput").onchange = async (ev) => {
     const f = ev.target.files?.[0];
@@ -441,18 +849,31 @@ async function boot() {
     try {
       const entry = await loadKeyfile(f);
       window.__revealKey = entry;
-      $("revealMeta").textContent = `commitment ${entry.commitment?.slice(0, 16)}… tag ${entry.tag}`;
-    } catch (e) { alert(e); }
+      await resumeFromKeyfile(entry);
+    } catch (e) { alert(e); console.error(e); }
+  };
+  $("btnResume").onclick = async () => {
+    if (!window.__revealKey) return alert("load a keyfile first");
+    try { await resumeFromKeyfile(window.__revealKey); } catch (e) { alert(e); }
   };
   $("btnReveal").onclick = () => {
-    if (!window.__revealKey) return alert("load a keyfile first");
-    prepareReveal(window.__revealKey).catch((e) => alert(e));
+    if (!session.keyfile && !window.__revealKey) return alert("load a keyfile first");
+    if (window.__revealKey && !session.keyfile) {
+      resumeFromKeyfile(window.__revealKey).then(() => signAndBroadcastReveal())
+        .catch((e) => { $("revealStatus").textContent = String(e.message || e); });
+      return;
+    }
+    signAndBroadcastReveal().catch((e) => {
+      $("revealStatus").textContent = String(e.message || e);
+      console.error(e);
+    });
   };
-  $("btnCopyRev").onclick = () => copyText("revealCli");
+  $("btnCopyRev").onclick = () => copyText("revealSigned");
   $("btnWatchPunk").onclick = () => {
-    const index = +$("revealIndex").value;
-    watchMyPunk(index).catch((e) => alert(e));
+    watchMyPunk(+$("revealIndex").value).catch((e) => alert(e));
   };
+
+  console.log("ZVAULT app boot OK", { network: PAGE_NETWORK, treasury: TREASURY });
 }
 
 boot();

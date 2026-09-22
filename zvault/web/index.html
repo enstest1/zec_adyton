@@ -25,14 +25,37 @@
   </div>
   <button type="button" id="btnRefresh">refresh table</button>
 
-  <h2>02 bid</h2>
-  <p class="banner">Burn is inactive in v1 and is not shown. Max live score is 750,000.</p>
-  <label>minerTag (20-byte hex of your transparent address / tag)</label>
-  <input id="tag" type="text" spellcheck="false" autocomplete="off" placeholder="40 hex chars" />
+  <h2>02 burner (stage 1 — funds keyfile first)</h2>
+  <p class="banner warn-box">
+    Generate a burner, <b>download the funds keyfile immediately</b>, then fund it.
+    Closing the tab before that download loses the private key with no recovery.
+    The minerTag is derived from the burner — you never type hex.
+  </p>
+  <label>return change / abandon-sweep destination (transparent)</label>
+  <input id="revealReturnAddr" type="text" spellcheck="false" autocomplete="off"
+         placeholder="tm… testnet / t1… mainnet" />
+  <button type="button" id="btnGenBurner">generate burner + download funds keyfile</button>
+  <div id="burnerBox" class="hidden">
+    <p class="kv"><span>burner address (fund this)</span><br /><b id="burnerAddr" class="treasury">—</b></p>
+    <p class="kv"><span>minerTag (derived — not typed)</span><br /><b id="burnerTag">—</b></p>
+    <p class="banner warn-box" id="oneSendWarn">
+      Fund the burner in <b>one send</b>. Multiple deposits add inputs and raise the
+      ZIP 317 fee. Send exactly the amount below, once.
+    </p>
+    <p class="kv"><span>send (ONE number — mint + fees + reveal + buffer)</span><br /><b id="fundingNeed">—</b></p>
+    <p class="kv"><span>balance</span><br /><b id="burnerBal">waiting for funds keyfile…</b></p>
+    <p id="fundStatus" class="banner"></p>
+    <button type="button" id="btnPollBal" disabled>check balance now</button>
+    <button type="button" id="btnAbandon" class="hidden" disabled>abandon-sweep to return address</button>
+  </div>
+  <p class="kv treasury-line"><span>treasury (hardcoded — compare to repo / launch thread)</span><br /><b id="treasuryBid" class="treasury">—</b></p>
+
+  <h2>03 bid + mine</h2>
+  <p class="banner">Burn is inactive in v1. Work defaults to max (4). Max live score is 750,000.</p>
   <div class="grid">
     <div>
-      <label>work 0..4</label>
-      <input id="work" type="number" min="0" max="4" value="2" />
+      <label>work 0..4 (default max)</label>
+      <input id="work" type="number" min="0" max="4" value="4" />
     </div>
     <div>
       <label>patience 0..7 days (×1152 blocks)</label>
@@ -44,37 +67,25 @@
     </div>
   </div>
   <p class="kv"><span>score</span> <b id="score">—</b> · <span>pay</span> <b id="pay">—</b></p>
-  <p class="banner warn-box" id="oneSendWarn">
-    Fund the burner in <b>one send</b>. Multiple deposits (e.g. several exchange
-    withdrawals) add inputs and raise the ZIP 317 fee — your budget can be exceeded
-    silently. Send exactly the amount below, once.
-  </p>
-  <p class="kv"><span>send to burner (ONE number — mint + fees + reveal + buffer)</span><br /><b id="fundingNeed">—</b></p>
-  <p class="kv treasury-line"><span>treasury (hardcoded — compare to repo / launch thread)</span><br /><b id="treasuryBid" class="treasury">—</b></p>
   <p id="proj" class="banner"></p>
-
-  <h2>03 mine</h2>
-  <button type="button" id="btnMine">start mine</button>
+  <button type="button" id="btnMine" disabled>start mine</button>
   <p class="hash-counter"><span id="hashRate">0</span></p>
   <p class="found" id="mineStatus"></p>
 
   <div id="keyfileGate" class="hidden">
     <div class="panel warn-box" id="keyfileWarn">
-      KEYFILE REQUIRED BEFORE OP_RETURN IS SHOWN.
+      STAGE 2 KEYFILE — REPLACES THE FUNDS FILE.
 
-      This keyfile protects FUNDS as well as openability. Losing it loses the
-      mint, the ability to reveal, AND anything left in the burner. There is
-      no recovery path. A clone site that asks you to paste these into a form
-      is stealing your mint and your funds.
-
-      Download the keyfile, store it offline, then the OP_RETURN hex appears.
+      Download this mint keyfile before OP_RETURN / signed hex appear.
+      It adds secret/seed/salt. Keep both files offline until you are sure
+      the mint file is safe; stage 1 alone still recovers funds.
     </div>
     <p id="recordPending"></p>
-    <button type="button" id="btnSaveKey" disabled>download keyfile</button>
+    <button type="button" id="btnSaveKey" disabled>download mint keyfile (replaces stage 1)</button>
   </div>
 
   <div id="recordBox" class="hidden">
-    <h2>04 broadcast handoff</h2>
+    <h2>04 sign + broadcast</h2>
     <label>OP_RETURN (74-byte hex)</label>
     <div class="panel" id="opreturn"></div>
     <button type="button" id="btnCopyOp">copy OP_RETURN</button>
@@ -83,37 +94,42 @@
     <p id="fundingGate" class="fail hidden"></p>
     <p class="kv treasury-line"><span>pay to treasury</span><br /><b id="treasuryPay" class="treasury">—</b></p>
     <p class="kv"><span>valid through block</span> <b id="deadline">—</b></p>
-    <label>signed transaction hex (broadcast yourself — relay is optional)</label>
+    <button type="button" id="btnSignMint">sign mint + broadcast (relay optional)</button>
+    <label>signed transaction hex (always shown — relay is optional)</label>
     <div class="panel" id="signedHex">—</div>
     <button type="button" id="btnCopySigned">copy signed hex</button>
+    <p id="broadcastStatus" class="banner"></p>
     <p class="banner">The relay is a convenience postbox only. Paste this hex into
       any node <code>sendrawtransaction</code> if you prefer not to use our relay.</p>
-    <label>copyable CLI notes (no custodial broadcast)</label>
+    <label>copyable CLI notes</label>
     <div class="panel" id="cliCmd"></div>
     <button type="button" id="btnCopyCli">copy handoff</button>
   </div>
 
-  <h2>05 reveal</h2>
-  <p class="banner">Load a keyfile. Emit both reveal OP_RETURN chunks in one transaction. Transparent in/out must match minerTag. Reveal change goes to your return address (not back to the burner) — same fee already budgeted.</p>
-  <label>return change to (transparent address — recoverable from keyfile later)</label>
-  <input id="revealReturnAddr" type="text" spellcheck="false" autocomplete="off" placeholder="t1… or tm… on testnet" />
+  <h2>05 status after broadcast</h2>
+  <div class="panel" id="postStatus">Load a keyfile or broadcast a mint to track confirmation, seal, and patience.</div>
+
+  <h2>06 resume / reveal / sweep</h2>
+  <p class="banner">Load a keyfile from any stage. Stage 1 recovers funds; stage 2 can sign mint or reveal.</p>
   <label>keyfile</label>
   <input id="keyfileInput" type="file" accept="application/json,.json" />
   <p id="revealMeta" class="kv"></p>
-  <label>mint index (from indexer / table after your mint lands)</label>
+  <label>mint index (auto-filled when indexed; override if needed)</label>
   <input id="revealIndex" type="number" min="0" value="0" />
-  <button type="button" id="btnReveal">build reveal chunks</button>
+  <button type="button" id="btnReveal">sign + broadcast reveal</button>
+  <button type="button" id="btnResume">resume from this keyfile</button>
   <p id="revealStatus"></p>
   <div id="revealOut" class="hidden">
     <label>chunk A</label>
     <div class="panel" id="revealA"></div>
     <label>chunk B</label>
     <div class="panel" id="revealB"></div>
-    <div class="panel" id="revealCli"></div>
-    <button type="button" id="btnCopyRev">copy reveal handoff</button>
+    <label>signed reveal hex</label>
+    <div class="panel" id="revealSigned">—</div>
+    <button type="button" id="btnCopyRev">copy reveal hex</button>
     <button type="button" id="btnWatchPunk">watch for my punk</button>
     <div id="myPunk" class="hidden">
-      <h2>06 your punk</h2>
+      <h2>07 your punk</h2>
       <p class="banner">Rendered by the publisher from on-chain reveal — not by this page.</p>
       <img id="punkImg" alt="your punk" width="384" height="384"
            style="image-rendering:pixelated;background:#000;border:1px solid var(--line)" />
@@ -127,8 +143,8 @@
   <p class="banner"><a href="./collection.html">open collection →</a></p>
 
   <footer>
-    Protocol frozen at 494dfcc · digest 86105264… · art stays in Python ·
-    no embedded terminal · never paste key material into a website.
+    Protocol frozen · digest 81508c84… · art stays in Python ·
+    no bundler · never paste key material into a website.
   </footer>
 </main>
 <script type="module" src="./js/app.js"></script>

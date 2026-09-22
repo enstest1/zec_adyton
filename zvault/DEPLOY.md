@@ -39,6 +39,10 @@ Record the real names here when registered. Until then, local bind:
 | Tatum **paid** key | OK | OK | Acceptable bridge |
 | **Self-hosted Zebra** (`ghcr.io/zcashfoundation/zebra`) | OK | OK | **Recommend for production** |
 
+**UTXO lookup (B0):** Tatum/zebrad has **no** `getaddressutxos`. The publisher
+builds a P2PKH UTXO index from blocks it already fetches (**0 extra RPC** vs
+the 5 rpm budget). Page polls `./pub/utxos/<address>.json`.
+
 **Recommendation:** run **self-hosted Zebra** for the operator indexer. Paid
 Tatum is fine as a temporary bridge while Zebra syncs, or as a read replica
 for monitors — not as the only production RPC if you expect resyncs. Free

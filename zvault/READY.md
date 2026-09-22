@@ -17,6 +17,8 @@ does not include a git hash you can `git checkout` yourself.
 - `MAX_MONEY = 12`, `MAX_BURN = 0` (burn axis stubbed; max live score 750,000)
 - No on-chain transfer; ownership is the minting address
 - Static mint page (`web/`) + epoch publisher (`zcash/publisher.py`)
+- **Burner UX:** stage-1 funds keyfile before address shown; stage-2 mint
+  keyfile before OP_RETURN; UTXO poll via publisher block-scan index (B0)
 - **Art on reveal:** publisher runs `generate.derive_tier` + draw (Python only),
   writes `pub/punks/{n}.png` + `.json`, serves `collection.json` /
   `collection.html`; mint page can watch for your punk after reveal
@@ -87,6 +89,7 @@ node web/test_page_security.mjs
 node web/test_no_bare_imports.mjs   # no @noble / bare specs under js/
 node web/js/tx/run_tx_tests.mjs     # every js/tx/test_*.mjs; crash = fail
 python zcash/test_publisher_snapshot.py
+python zcash/test_utxo_index.py         # B0 UTXO block-scan index
 python zcash/test_art_pipeline.py       # mint→seal→reveal→PNG
 python web/test_owner_constants.py      # fails until owner sets TREASURY
 # + TESTNET.md cycle with real txids before mainnet

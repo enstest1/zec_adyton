@@ -1,9 +1,31 @@
 # TESTNET.md — real-node dry run status
 
-**Status: P0.3 still OPEN — reads unblocked on hosted zebrad; no mint/reveal txids yet.**
+**Status: P0.3 still OPEN — B0 settled: no address-index RPC on Tatum; publisher `/utxos` from block scan.**
 
 Protocol digest (unchanged):  
 `81508c848ed7511a5e018b5f7e47051ec260e72ac8b9e2329b25721343294635`
+
+## B0 — UTXO lookup (2026-09-22, live Tatum probe)
+
+Probed `https://zcash-testnet-zebrad.gateway.tatum.io`:
+
+| Method | Result |
+|---|---|
+| `getaddressutxos` | **Method not found** (−32601) |
+| `getaddressbalance` | **Method not found** |
+| `getaddressinfo` | **Method not found** |
+
+**(b) — no address UTXO RPC on our endpoint.** The publisher therefore maintains a
+transparent P2PKH UTXO index from the **same** `getblock(verbosity=2)` stream it
+already fetches for mint indexing.
+
+- **Cost vs 5 rpm:** **0 extra RPC** — index rides along existing getblock calls.
+- Page polls same-origin `./pub/utxos/<address>.json` (and `GET /utxos/<addr>` on
+  the publisher bind). Poll interval ~20s hits the publisher HTTP only, not Tatum.
+- Offline `--blocks` ingest is mint-only JSON and does **not** feed the UTXO index.
+
+Do not implement page funding against `getaddressutxos` on Tatum — it will never
+work on this endpoint.
 
 ## Do NOT use zcashd
 

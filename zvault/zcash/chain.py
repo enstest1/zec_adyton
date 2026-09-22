@@ -170,12 +170,15 @@ def transparent_tags(tx) -> list:
     return tags
 
 
-def extract_block(node: Node, height: int) -> dict:
-    blk = node.call("getblock", [str(height), 2])   # verbosity 2 = full txs
+def extract_mint_txs_from_rpc_block(blk: dict) -> list:
+    """Mint/reveal OP_RETURN txs from an already-fetched getblock(..., 2) result.
+
+    Same filter as extract_block, without a second RPC round-trip.
+    """
     txs = []
     for tx in blk.get("tx", []):
-        if isinstance(tx, str):                      # verbosity fell back to ids
-            tx = node.call("getrawtransaction", [tx, 1])
+        if isinstance(tx, str):
+            continue
         payloads = []
         for vout in tx.get("vout", []):
             got = op_return_from(vout)
@@ -189,13 +192,22 @@ def extract_block(node: Node, height: int) -> dict:
             "burned": burned_in(tx),
             "transparent_tags": [t.hex() for t in transparent_tags(tx)],
         }
-        # Mint is a single OP_RETURN; reveal is two chunks in one tx.
         if len(payloads) == 1:
             entry["op_return"] = payloads[0].hex()
         else:
             entry["op_returns"] = [p.hex() for p in payloads]
         txs.append(entry)
-    return {"height": height, "hash": blk.get("hash"), "tx": txs}
+    return txs
+
+
+def extract_block(node: Node, height: int) -> dict:
+    blk = node.call("getblock", [str(height), 2])   # verbosity 2 = full txs
+    return {
+        "height": height,
+        "hash": blk.get("hash"),
+        "tx": extract_mint_txs_from_rpc_block(blk),
+        "_raw": blk,  # optional; callers that need UTXOs keep the raw block
+    }
 
 
 def rehydrate(blocks):

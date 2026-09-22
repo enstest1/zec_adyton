@@ -31,11 +31,13 @@ import threading
 import time
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import unquote, urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import chain as ch  # noqa: E402
 import indexer as ix  # noqa: E402
 import art_render as art  # noqa: E402
+import utxo_index as ux  # noqa: E402
 
 SNAPSHOT_VERSION = 1
 
@@ -220,7 +222,7 @@ def load_vault(out: Path) -> ix.Vault | None:
     return vault_from_snapshot(snap)
 
 
-def write_public(out: Path, vault: ix.Vault) -> None:
+def write_public(out: Path, vault: ix.Vault, chain_meta: dict | None = None) -> None:
     table = vault.table()
     tip = vault.height if vault.height is not None else vault._obs_height
     state = {
@@ -238,15 +240,66 @@ def write_public(out: Path, vault: ix.Vault) -> None:
         "score_floors": list(ix.score_floors()),
         "revealed": len(vault.revealed),
         "revealed_indices": sorted(vault.revealed.keys()),
+        # Page status poll (B5): commitment → index without scraping bids only.
+        "commitments": [
+            {
+                "index": i,
+                "commitment": _b2h(c["commitment"]),
+                "score": c.get("score"),
+                "tier": c.get("tier"),
+                "height": c.get("height"),
+            }
+            for i, c in enumerate(vault.commitments)
+        ],
     }
+    # Signing needs nextblock branch id — publish it so the page never hits
+    # the node/Tatum for getblockchaininfo (saves the 5 rpm budget).
+    if chain_meta:
+        if chain_meta.get("chain") is not None:
+            state["chain"] = chain_meta["chain"]
+        if chain_meta.get("consensus_nextblock") is not None:
+            state["consensus_nextblock"] = chain_meta["consensus_nextblock"]
+        if chain_meta.get("blocks") is not None:
+            state["node_blocks"] = chain_meta["blocks"]
     atomic_write(out / "table.json", json.dumps(table, indent=2) + "\n")
     atomic_write(out / "state.json", json.dumps(state, indent=2) + "\n")
     # PNG + traits for every reveal — product surface, still Python-only.
     art.sync_art(out, vault)
 
 
+def write_utxo_files(out: Path, index: ux.UtxoIndex, touched: set[str]) -> None:
+    """Write ./utxos/<address>.json for addresses changed this block (same-origin)."""
+    udir = out / "utxos"
+    udir.mkdir(parents=True, exist_ok=True)
+    for addr in touched:
+        rows = index.lookup(addr)
+        path = udir / f"{addr}.json"
+        if not rows:
+            if path.exists():
+                path.unlink()
+            continue
+        body = {
+            "address": addr,
+            "height": index.height,
+            "balanceZat": sum(r["valueZat"] for r in rows),
+            "utxos": [
+                {
+                    "txidHex": r["txidHex"],
+                    "vout": r["vout"],
+                    "valueZat": r["valueZat"],
+                    "scriptPubKey": r.get("scriptPubKey") or "",
+                    "height": r["height"],
+                }
+                for r in rows
+            ],
+        }
+        atomic_write(path, json.dumps(body) + "\n")
+
+
 class CorsHandler(SimpleHTTPRequestHandler):
-    """Static file server with permissive CORS and short cache."""
+    """Static file server + GET /utxos/<address> (B0 — no node address index)."""
+
+    utxo_index: ux.UtxoIndex | None = None
 
     def __init__(self, *args, directory=None, **kwargs):
         super().__init__(*args, directory=directory, **kwargs)
@@ -262,11 +315,59 @@ class CorsHandler(SimpleHTTPRequestHandler):
         self.send_response(204)
         self.end_headers()
 
+    def do_GET(self):
+        parsed = urlparse(self.path)
+        path = parsed.path
+        if path.startswith("/utxos/"):
+            addr = unquote(path[len("/utxos/") :]).strip()
+            self._serve_utxos(addr)
+            return
+        return super().do_GET()
+
+    def _serve_utxos(self, addr: str):
+        idx = CorsHandler.utxo_index
+        if idx is None:
+            self.send_error(503, "utxo index not ready")
+            return
+        if not addr or "/" in addr or ".." in addr:
+            self.send_error(400, "bad address")
+            return
+        rows = idx.lookup(addr)
+        body = {
+            "address": addr,
+            "height": idx.height,
+            "balanceZat": sum(r["valueZat"] for r in rows),
+            "utxos": [
+                {
+                    "txidHex": r["txidHex"],
+                    "vout": r["vout"],
+                    "valueZat": r["valueZat"],
+                    "scriptPubKey": r.get("scriptPubKey") or "",
+                    "height": r["height"],
+                }
+                for r in rows
+            ],
+            "source": "publisher-block-scan",
+            "note": "Tatum/zebrad has no getaddressutxos; index built from blocks already fetched (0 extra RPC).",
+        }
+        raw = json.dumps(body).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(raw)))
+        self.end_headers()
+        self.wfile.write(raw)
+
     def log_message(self, fmt, *args):
         sys.stderr.write("[http] " + (fmt % args) + "\n")
 
 
-def follow_loop(node: ch.Node, vault: ix.Vault, out: Path, interval: int) -> None:
+def follow_loop(
+    node: ch.Node,
+    vault: ix.Vault,
+    out: Path,
+    interval: int,
+    utxos: ux.UtxoIndex,
+) -> None:
     """Pull blocks from the node forever. Resume from obs/indexed tip."""
     if vault._obs_height is None:
         height = vault.first_height()
@@ -276,12 +377,20 @@ def follow_loop(node: ch.Node, vault: ix.Vault, out: Path, interval: int) -> Non
     sys.stderr.write(
         f"[publisher] resume at height {height} "
         f"(indexed={vault.height} obs={vault._obs_height} "
-        f"depth={vault.confirmation_depth})\n"
+        f"utxo={utxos.height} depth={vault.confirmation_depth})\n"
     )
+
+    chain_meta: dict = {}
 
     while True:
         try:
-            tip = node.call("getblockchaininfo")["blocks"]
+            info = node.call("getblockchaininfo")
+            tip = info["blocks"]
+            chain_meta = {
+                "chain": info.get("chain"),
+                "blocks": tip,
+                "consensus_nextblock": (info.get("consensus") or {}).get("nextblock"),
+            }
         except Exception as e:
             sys.stderr.write(f"[publisher] node unreachable: {e}\n")
             time.sleep(interval)
@@ -291,15 +400,36 @@ def follow_loop(node: ch.Node, vault: ix.Vault, out: Path, interval: int) -> Non
             sys.stderr.write(
                 f"[publisher] waiting: node tip {tip} < next {height}\n"
             )
-            write_public(out, vault)
+            write_public(out, vault, chain_meta)
             time.sleep(interval)
             continue
 
         while height <= tip:
             try:
-                blk = ch.rehydrate([ch.extract_block(node, height)])[0]
-                bh = bytes.fromhex(blk["hash"]) if isinstance(blk["hash"], str) else blk["hash"]
-                log = vault.apply_block(height, bh, blk.get("tx", []))
+                raw_blk = node.call("getblock", [str(height), 2])
+                # B0: UTXO index from the same getblock — no extra RPC.
+                touched = utxos.apply_rpc_block(height, raw_blk)
+                write_utxo_files(out, utxos, touched)
+                utxos.save(out / "utxo_index.json")
+
+                mint_txs = ch.extract_mint_txs_from_rpc_block(raw_blk)
+                for tx in mint_txs:
+                    if isinstance(tx.get("op_return"), str):
+                        tx["op_return"] = bytes.fromhex(tx["op_return"])
+                    if "op_returns" in tx:
+                        tx["op_returns"] = [
+                            bytes.fromhex(p) if isinstance(p, str) else p
+                            for p in tx["op_returns"]
+                        ]
+                    if "transparent_tags" in tx:
+                        tx["transparent_tags"] = [
+                            bytes.fromhex(t) if isinstance(t, str) else t
+                            for t in tx["transparent_tags"]
+                        ]
+                bh = raw_blk.get("hash")
+                if isinstance(bh, str):
+                    bh = bytes.fromhex(bh)
+                log = vault.apply_block(height, bh, mint_txs)
                 for entry in log:
                     if entry.get("reason", "").startswith("mint") or entry.get("ok") is False:
                         sys.stderr.write(
@@ -307,7 +437,7 @@ def follow_loop(node: ch.Node, vault: ix.Vault, out: Path, interval: int) -> Non
                             f"{entry.get('reason')}\n"
                         )
                 save_vault(out, vault)
-                write_public(out, vault)
+                write_public(out, vault, chain_meta)
             except ix.InputError as e:
                 sys.stderr.write(f"[publisher] refusing block {height}: {e}\n")
                 time.sleep(interval)
@@ -322,7 +452,7 @@ def follow_loop(node: ch.Node, vault: ix.Vault, out: Path, interval: int) -> Non
         dig = vault.digest()[:16] if vault.height is not None else "—"
         sys.stderr.write(
             f"\r  tip {tip}  indexed {tip_show}  minted {vault.minted}  "
-            f"digest {dig}…   "
+            f"utxos {len(utxos.by_out)}  digest {dig}…   "
         )
         time.sleep(interval)
 
@@ -353,6 +483,12 @@ def main():
             f"[publisher] loaded vault.json indexed={vault.height} "
             f"obs={vault._obs_height} minted={vault.minted}\n"
         )
+
+    utxos = ux.UtxoIndex.load(out / "utxo_index.json")
+    CorsHandler.utxo_index = utxos
+    sys.stderr.write(
+        f"[publisher] utxo index height={utxos.height} outs={len(utxos.by_out)}\n"
+    )
 
     if args.blocks:
         raw = Path(args.blocks).read_text(encoding="utf-8").strip()
@@ -387,6 +523,10 @@ def main():
                 f"[publisher] ingested {args.blocks}: minted={vault.minted} "
                 f"digest={(vault.digest()[:16] + '…') if vault.height is not None else '—'}\n"
             )
+            sys.stderr.write(
+                "[publisher] note: offline --blocks has mint txs only; "
+                "UTXO index needs live getblock verbosity 2\n"
+            )
         if args.no_http:
             return
         host, _, port_s = args.bind.partition(":")
@@ -418,10 +558,11 @@ def main():
 
     node = ch.Node(args.url, args.user, args.password, args.cookie)
     try:
-        follow_loop(node, vault, out, args.interval)
+        follow_loop(node, vault, out, args.interval, utxos)
     except KeyboardInterrupt:
         sys.stderr.write("\n[publisher] stopped\n")
         save_vault(out, vault)
+        utxos.save(out / "utxo_index.json")
         write_public(out, vault)
 
 

@@ -85,6 +85,19 @@ export const DEFAULT_TABLE_URL = "./pub/table.json";
 export const DEFAULT_STATE_URL = "./pub/state.json";
 
 /**
+ * Same-origin UTXO JSON written by the publisher (B0).
+ * Tatum has no getaddressutxos — page polls these files, not the node.
+ */
+export const utxosJsonUrl = (address) =>
+  `./pub/utxos/${encodeURIComponent(address)}.json`;
+
+/**
+ * Optional postbox relay base (empty = show hex only, user broadcasts).
+ * Override at deploy time; never required for correctness.
+ */
+export const DEFAULT_RELAY_URL = "";
+
+/**
  * When false (published build), any ?table= / ?state= query override is
  * refused. Flip to true only for local fixture work — still same-origin only.
  */
